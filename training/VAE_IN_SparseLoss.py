@@ -8,18 +8,21 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 import torchvision.datasets
+import itertools
+from torch.autograd.variable import *
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
 from pickle import dump
 import numpy as np
 import h5py
+import math
 
 # Hyperparameters
-model_name = "VAE_Conv2D_SparseLoss"
+model_name = "VAE_IN_SparseLoss"
 num_epochs = 500
 num_classes = 1
 training_fraction = 0.7
-batch_size = 30
+batch_size = 100
 learning_rate = 0.001
 latent_dim = 10
 beta = 1.
@@ -46,33 +49,38 @@ def tmul(x, y):  #Takes (I * J * K)(K * L) -> I * J * L
 
 # processes a PxDo input with aggregation function (sum) + MLP to return a n_targets array
 class INaggregator(nn.Module):
-        def _init__(self, Do, n_targets, hidden):
+        def __init__(self, name, Do, n_targets, hidden):
                 super(INaggregator, self).__init__()
+                self.name = name
                 self.Do = Do
                 self.n_targets = n_targets
                 self.hidden = hidden
 
-                self.fc1 = nn.Linear(self.Do *1, self.hidden).cuda()
+                self.fc1 = nn.Linear(self.Do, self.hidden).cuda()
                 self.fc2 = nn.Linear(self.hidden, self.hidden).cuda()
                 self.fc3 = nn.Linear(self.hidden, self.n_targets).cuda()
 
         def forward(self, x):
-                O = torch.sum(x, dim=1)
-                N = nn.functional.relu(self.fc1(O.view(-1, self.Do * 1)))
+                #sum over N
+                O = torch.sum(x, dim=2)
+                # apply MLP
+                N = nn.functional.relu(self.fc1(O.view(-1, self.Do)))
                 N = nn.functional.relu(self.fc2(N))
                 N = self.fc3(N)
-                
+                return N 
 
-class INlayer(nn.Module):
-        def _init__(self, N, P, De, Do, hidden):
-                super(INlayer, self).__init__()
+class InLayer(nn.Module):
+        def __init__(self, name, N, P, Do, De, hidden):
+                super(InLayer, self).__init__()
+
+                self.name = name
                 self.N = N
                 self.P = P
                 self.De = De
                 self.Do = Do
                 self.hidden = hidden
                 self.Nr = N*(N-1)
-                self.Rr, self.Rs = assign_matrices(N, Nr)    
+                self.Rr, self.Rs = assign_matrices(self.N, self.Nr)    
 
                 # initialize the MLPs 
                 self.fr1 = nn.Linear(2 * P, hidden).cuda()
@@ -84,110 +92,104 @@ class INlayer(nn.Module):
                 self.fo3 = nn.Linear(hidden, Do).cuda()
 
         # turn a PxN input into a PxDo output
-        def forward(self, N, P, De, Do, hidden, fr_activation, fo_activation, fc_activation):
+        def forward(self, x):
 
-                Orr = self.tmul(x, self.Rr)
-                Ors = self.tmul(x, self.Rs)
+                Orr = tmul(x, self.Rr)
+                Ors = tmul(x, self.Rs)
                 B = torch.cat([Orr, Ors], 1)
 
                 ### First MLP ###
                 B = torch.transpose(B, 1, 2).contiguous()
-                B = nn.functional.relu(self.fr0(B.view(-1, 2 * self.P)))
-                B = nn.functional.relu(self.fr1(B))
-                E = nn.functional.relu(self.fr2(B).view(-1, self.Nr, self.De))
+                B = nn.functional.relu(self.fr1(B.view(-1, 2 * self.P)))
+                B = nn.functional.relu(self.fr2(B))
+                E = nn.functional.relu(self.fr3(B).view(-1, self.Nr, self.De))
                 del B
                 E = torch.transpose(E, 1, 2).contiguous()
-                Ebar = self.tmul(E, torch.transpose(Rr, 0, 1).contiguous())
+                Ebar = tmul(E, torch.transpose(self.Rr, 0, 1).contiguous())
                 del E
                 C = torch.cat([x, Ebar], 1)
                 del Ebar
                 C = torch.transpose(C, 1, 2).contiguous()
-                C = nn.functional.relu(self.fo0(C.view(-1, self.P + self.De)))
-                C = nn.functional.relu(self.fo1(C))
-                O = nn.functional.relu(fo2(C).view(-1, self.N, self.Do))
+                C = nn.functional.relu(self.fo1(C.view(-1, self.P + self.De)))
+                C = nn.functional.relu(self.fo2(C))
+                O = nn.functional.relu(self.fo3(C).view(-1, self.Do, self.N))
                 del C
                 return O
             
 class InVAE(nn.Module):
         def __init__(self, N, P, Nz):
                 super(InVAE, self).__init__()
-                
-                self.N = N
-                self.P = P
+
+                self.Nae = N
+                self.Pae = P
                 self.Nz = Nz
 
                 # Encoder
                 # (NxP -> NxDo_1)
                 self.Do_1 = 10
                 De_1 = 20
-                self.enc_INlayer1 = INlayer(self.N, self.P, self.Do_1, D2_1, 64)
+                self.enc_InLayer1 = InLayer("INenc1", self.Nae, self.Pae, self.Do_1, De_1, 64)
                 # (NxDo_1 -> NxDo_2)   
                 self.Do_2 = 20
                 De_2 = 30
-                self.enc_INlayer1 = INlayer(self.N, self.Do_1, De_2, self.Do_2, 64)
+                self.enc_InLayer2 = InLayer("INenc2", self.Nae, self.Do_1, self.Do_2, De_2, 64)
                 # aggregate De_2 quantities to Nz latent mu
-                self.mean = INaggregator(self.Do_2, self.Nz, 64)
-                self.logvar = INaggregator(self.Do_2, self.Nz, 64)
+                self.mean = INaggregator("mean", self.Do_2, self.Nz, 64)
+                self.logvar = INaggregator("logvar", self.Do_2, self.Nz, 64)
 
                 #Decoder
-                dec_hidden = sqrt(self.N*self.Do_2*self.Nz)
+                dec_hidden = int(math.sqrt(self.Nae*self.Do_2*self.Nz))
+
                 self.dec_dnn1 = nn.Linear(self.Nz, dec_hidden).cuda()
                 self.dec_dnn2 = nn.Linear(dec_hidden, dec_hidden).cuda()
-                self.dec_dnn3 = nn.Linear(dec_hidden, self.N*self.Do_2).cuda()
+                self.dec_dnn3 = nn.Linear(dec_hidden, self.Nae*self.Do_2).cuda()
 
                 # NxDo_2 -> NxDo_1
-                self.dec_INlayer1 = INlayer(self.N, self.Do_2, self.Do_1, De_2, 64)
+                self.dec_InLayer1 = InLayer("IN_dec1", self.Nae, self.Do_2, self.Do_1, De_2, 64)
                 # NxDo_1  -> NxP
-                self.dec_INlayer2 = INlayer(self.N, self.Do_1, self.P, De_1, 64)
+                self.dec_InLayer2 = InLayer("IN_dec2", self.Nae, self.Do_1, self.Pae, De_1, 64)
 
-        def encode(self, x):
-                # encoder 
-                Enc = self.enc_INlayer1(x)
-                Enc = self.enc_INlayer2(Enc)
-                mean  = self.mean(Enc)
-                logvar = self.logvar(Enc)
-                return mean, logvar
-    
-        def decode(self, x):
-                Dec = nn.functional.relu(self.dec_dnn1(x))
-                Dec = Dec.view(-1, self.Do_2, self.N)
-                Dec = self.dec_INlayer1(Dec)
-                Dec = self.dec_INlayer(Dec)
-                return Dec
-                
+
         def reparameterize(self, mean, logvar):
             z = mean + torch.randn_like(mean) * torch.exp(0.5 * logvar)
             return z
     
-        def forward(self, x):
-            mean, logvar = self.encode(x)
-            z = self.reparameterize(mean, logvar)
-            out = self.decode(z)
-            return out
+        def encode(self, x):
+                Enc = self.enc_InLayer1(x)
+                Enc = self.enc_InLayer2(Enc)
+                mean  = self.mean(Enc)
+                logvar = self.logvar(Enc)
+                return mean, logvar
 
-def compute_loss(model, x):
-    mean, logvar = model.encode(x)
+        def decode(self, z):
+                Dec = nn.functional.relu(self.dec_dnn1(z))
+                Dec = nn.functional.relu(self.dec_dnn2(Dec))
+                Dec = nn.functional.relu(self.dec_dnn3(Dec))
+                Dec = Dec.view(-1, self.Do_2, self.Nae)
+                Dec = self.dec_InLayer1(Dec)
+                Dec = self.dec_InLayer2(Dec)
+                return Dec
+
+        def forward(self, x):
+                mean, logvar = self.encode(x)
+                z = self.reparameterize(mean, logvar)
+                return self.decode(z)
+
+
+def compute_loss(model, x_pos):
+    mean, logvar = model.encode(x_pos)
     z = model.reparameterize(mean, logvar)
-    x_decoded = model.decode(z)
+    x_decoded_pos = model.decode(z)
     
     # Euclidean distance 
     pdist = nn.PairwiseDistance(p=2) 
-    x_pos = torch.zeros(batch_size,3,25).cuda()
-    # Removes the channel dimension to make the following calculations easier
-    x_pos = x[:,0,:,:] 
-    # Changes the dimension of the tensor so that dist is the distance between every 
-    # pair of input and output pixels
-    x_pos = x_pos.view(batch_size, 4, 1, 26) 
-    
-    x_decoded_pos = torch.zeros(batch_size,4,26).cuda()
-    # Removes the channel dimension to make the following calculations easier
-    x_decoded_pos = x_decoded[:,0,:,:] 
-    
+
     # Changes the dimension of the tensor so that dist is the distance between 
     # every pair of input and output pixels
+    x_pos = x_pos.view(batch_size, 4, 1, 26) 
     x_decoded_pos = x_decoded_pos.view(batch_size, 4, 26, 1) 
-    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 26, -1) 
-    
+
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 26, -1)     
     dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
     
     # Gets the value of the distance between the closest output pixels to all the 
@@ -213,19 +215,14 @@ def compute_loss(model, x):
 
 ########################## TRAINING ##########################
 
-model = InVAE()
-model = model.cuda()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
 # Load data
-#f = h5py.File("/eos/project/d/dshep/DARKMACHINES/sm/sm.h5", "r")
-f = h5py.File("/eos/project/d/dshep/DARKMACHINES/sm/4top_10fb.h5", "r")
+f = h5py.File("/eos/project/d/dshep/DARKMACHINES/bsm_10fb/gluino_01_10fb.h5", "r")
 particles = ['Bjets', 'MuPlus', 'MuMinus', 'ElePlus', 'EleMinus', 'Gamma']
 d = np.array(f.get("Jets"), dtype='f')
 for p in particles:
     d = np.concatenate((d, np.array(f.get(p), dtype='f')), axis=1) 
-# add channel
-d = np.reshape(d, (d.shape[0], 1, d.shape[1], d.shape[2]))
+# transpose constituents index and feature index (to match what IN expects)
+d = np.swapaxes(d, 1, 2)
 met = np.array(f.get("EventFeatures"))
 weight = met[:,1]
 evtId =  met[:,0]
@@ -233,11 +230,11 @@ met = np.array(met[:,-2:], dtype='f')
 
 # suffle data
 d, met, weight, evtId = shuffle(d, met, weight, evtId, random_state=0)
-
 # standardize particle inputs
 scaler_p = StandardScaler()
 d_shape = d.shape
-d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[3]))
+
+d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[1]))
 scaler_p.fit(d)
 d = scaler_p.transform(d)
 d = np.reshape(d, d_shape)
@@ -249,14 +246,18 @@ met = scaler_met.transform(met)
 dump(scaler_p, open('../models/%s_particleScaler.pkl' %model_name, 'wb'))
 dump(scaler_met, open('../models/%s_metScaler.pkl' %model_name, 'wb'))
 
+model = InVAE(d.shape[2], d.shape[1],10)
+model = model.cuda()
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
 i_train = int(d.shape[0]*training_fraction)
 # training data
-x_train = d[:i_train,:,:,:]
+x_train = d[:i_train,:,:]
 met_train = met[:i_train,:]
 weight_train = weight[:i_train]
 evtId_train = evtId[:i_train]
 # test data
-x_test = d[i_train:,:,:,:]
+x_test = d[i_train:,:,:]
 met_test = met[i_train:,:]
 weight_test = weight[i_train:]
 evtId_test = evtId[i_train:]
@@ -286,7 +287,7 @@ for epoch in range(num_epochs):
     for y, (x_train) in enumerate(train_loader):
         if y == (len(train_loader) - 1): break
 
-        input_train = x_train[:, :, :, :].cuda()
+        input_train = x_train[:, :, :].cuda()
         # Train
         output_train = model(input_train)
         tr_loss, tr_kl, tr_eucl = compute_loss(model, input_train)
@@ -306,7 +307,7 @@ for epoch in range(num_epochs):
     te_rec_aux = 0.0
     for y, (x_test) in enumerate(test_loader):
         if y == (len(test_loader) - 1): break
-        input_test = x_test[:, :, :, :].cuda()
+        input_test = x_test[:, :, :].cuda()
         te_loss, te_kl, te_eucl = compute_loss(model, input_test)
         # add this batch loss to total loss
         te_loss_aux += te_loss
