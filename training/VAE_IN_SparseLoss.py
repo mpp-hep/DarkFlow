@@ -1,7 +1,8 @@
-##################################################################################
-# VAE on DarkMachine dataset with 3D Sparse Loss and Interaction Networks        # 
-# Author: B. Orzani (Universidade Estadual Paulista, Brazil), M. Pierini (CERN)  #
-##################################################################################
+###################################################################################
+# VAE on DarkMachine dataset with 3D Sparse Loss and Interaction Networks         # 
+# Authors: B. Orzani (Universidade Estadual Paulista, Brazil), M. Pierini (CERN)  #
+#          P. Jawahar (Worcester Polytechnic Institute)
+###################################################################################
 
 import torch
 import torch.nn as nn
@@ -22,12 +23,39 @@ model_name = "VAE_IN_SparseLoss"
 num_epochs = 500
 num_classes = 1
 training_fraction = 0.7
-batch_size = 100
+batch_size = 10
 learning_rate = 0.001
 latent_dim = 10
 beta = 1.
 
 ################################
+
+def train_net(model, x_train, optimizer):
+    input_train = x_train[:, :, :].cuda()
+    # wt_train = wt_train[:].cuda()   
+
+    output_train = model(input_train)
+    tr_loss, tr_kl, tr_eucl = compute_loss(model, input_train)
+    # add this batch loss to total loss
+    # tr_loss_aux += tr_loss
+    # tr_kl_aux += tr_kl
+    # tr_rec_aux += tr_eucl
+
+    # Backprop and perform Adam optimisation
+    optimizer.zero_grad()
+    tr_loss.backward()
+    optimizer.step()
+
+    return tr_loss, tr_kl, tr_eucl
+
+def test_net(model, x_test):
+    model.eval()
+    with torch.no_grad():
+        input_test = x_test[:, :, :].cuda()
+        # wt_test = wt_test[:].cuda()
+        te_loss, te_kl, te_eucl = compute_loss(model, input_test)
+    return te_loss, te_kl, te_eucl
+
 
 def assign_matrices(N, Nr):
         Rr = torch.zeros(N, Nr)
@@ -287,32 +315,34 @@ for epoch in range(num_epochs):
     for y, (x_train) in enumerate(train_loader):
         if y == (len(train_loader) - 1): break
 
-        input_train = x_train[:, :, :].cuda()
-        # Train
-        output_train = model(input_train)
-        tr_loss, tr_kl, tr_eucl = compute_loss(model, input_train)
+        # input_train = x_train[:, :, :].cuda()
+        # # Train
+        # output_train = model(input_train)
+        # tr_loss, tr_kl, tr_eucl = compute_loss(model, input_train)
+        tr_loss, tr_kl, tr_eucl = train_net(model, x_train, optimizer)
         # add this batch loss to total loss
         tr_loss_aux += tr_loss
         tr_kl_aux += tr_kl
         tr_rec_aux += tr_eucl
-
         # Backprop and perform Adam optimisation
-        optimizer.zero_grad()
-        tr_loss.backward()
-        optimizer.step()
-        
+        # optimizer.zero_grad()
+        # tr_loss.backward()
+        # optimizer.step()
+
     # validation
     te_loss_aux = 0.0
     te_kl_aux = 0.0
     te_rec_aux = 0.0
     for y, (x_test) in enumerate(test_loader):
         if y == (len(test_loader) - 1): break
-        input_test = x_test[:, :, :].cuda()
-        te_loss, te_kl, te_eucl = compute_loss(model, input_test)
+        # input_test = x_test[:, :, :].cuda()
+        # te_loss, te_kl, te_eucl = compute_loss(model, input_test)
+        te_loss, te_kl, te_eucl = test_net(model, x_test)
         # add this batch loss to total loss
         te_loss_aux += te_loss
         te_kl_aux += te_kl
         te_rec_aux += te_eucl
+
 
     train_y_loss.append(tr_loss_aux.cpu().detach().numpy()/(len(train_loader)))
     train_y_kl.append(tr_kl_aux.cpu().detach().numpy()/(len(train_loader)))
