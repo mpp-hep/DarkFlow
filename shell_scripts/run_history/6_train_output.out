@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/pjawahar/Projects/DarkFlow/darkflow/training/VAE_Conv2D_HouseSNF.py", line 77, in <module>
+    model = model.cuda()
+  File "/home/pjawahar/Projects/Envs/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 311, in cuda
+    return self._apply(lambda t: t.cuda(device))
+  File "/home/pjawahar/Projects/Envs/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 208, in _apply
+    module._apply(fn)
+  File "/home/pjawahar/Projects/Envs/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 208, in _apply
+    module._apply(fn)
+  File "/home/pjawahar/Projects/Envs/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 230, in _apply
+    param_applied = fn(param)
+  File "/home/pjawahar/Projects/Envs/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 311, in <lambda>
+    return self._apply(lambda t: t.cuda(device))
+RuntimeError: CUDA error: out of memory
