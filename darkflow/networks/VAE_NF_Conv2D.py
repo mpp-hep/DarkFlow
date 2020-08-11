@@ -651,3 +651,8 @@ class IAFVAE(ConvNet):
         x_decoded = self.decode(z_k)
 
         return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
+
+class ConvFlowVAE(ConvNet):
+    """
+    Variational auto-encoder with convolutional flows in the encoder.
+    """
