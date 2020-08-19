@@ -57,8 +57,8 @@ class ConvNetRunner:
             self.model = VAE.TriangularSylvesterVAE(args)
         if self.flow == 'iaf':
             self.model = VAE.IAFVAE(args)
-        # if self.flow == 'convflow':
-        #     self.model = VAE.ConvFlow(args)
+        if self.flow == 'convflow':
+            self.model = VAE.ConvFlowVAE(args)
         else:
             raise ValueError('Invalid flow choice')
         

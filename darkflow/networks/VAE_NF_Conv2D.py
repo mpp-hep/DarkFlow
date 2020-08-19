@@ -659,3 +659,41 @@ class ConvFlowVAE(ConvNet):
 
     def __init__(self, args):
         super(ConvFlowVAE, self).__init__(args)
+
+        # Initialize log-det-jacobian to zero
+        self.log_det_j = 0
+        self.num_flows = args.num_flows
+
+        flow = flows.CNN_FLOW
+
+        # Normalizing flow layers
+        for k in range(self.num_flows):
+            flow_k = flow(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)
+            self.add_module('flow_' + str(k), flow_k)
+
+    def forward(self, x):
+
+        self.log_det_j = 0
+        self.kernel_size = 5
+
+        # mean and variance of z
+        z_mu, z_var = self.encode(x)
+        # sample z
+        z = self.reparameterize(z_mu, z_var)
+
+        # Normalizing flows
+        for k in range(self.num_flows):
+
+            flow_k = getattr(self, 'flow_' + str(k))
+            q_k = q_ortho[k]
+
+            z_k, log_det_jacobian = flow_k(z[k])
+
+            z.append(z_k)
+            self.log_det_j += log_det_jacobian
+
+        x_decoded = self.decode(z[-1])
+
+        return x_decoded, z_mu, z_var, self.log_det_j, z[0], z[-1]
+
+
