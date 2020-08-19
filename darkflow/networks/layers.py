@@ -160,13 +160,11 @@ class CNN_FLOW_LAYER(nn.Module):
         self.conv1d = nn.Conv1d(1, 1, kernel_size, dilation=dilation)
             
     def forward(self, x):
-        
+
         # pad zero to the right
         padded_x = F.pad(x, (0, (self.kernel_size-1) * self.dilation))
 
-        conv1d = self.conv1d(
-            padded_x.unsqueeze(1) # to make it (bs, 1, width)
-        ).squeeze()
+        conv1d = self.conv1d(padded_x.unsqueeze(1)).squeeze() #(bs, 1, width)
 
         w = self.conv1d.weight.squeeze()        
 

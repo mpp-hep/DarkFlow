@@ -21,5 +21,6 @@
  "num_flows" : 4, 
  "num_ortho_vecs" : 8,
  "num_householder" : 8,
- "made_h_size" : 320
+ "made_h_size" : 320,
+ "convFlow_kernel_size" : 5
 }

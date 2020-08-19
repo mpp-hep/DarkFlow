@@ -8,6 +8,9 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
+import numpy as np
+import math
+import sys
 
 from networks.layers import MaskedConv2d, MaskedLinear, CNN_Flow_Layer, Dilation_Block
 
@@ -256,7 +259,7 @@ class CNN_FLOW(nn.Module):
         
         self.layers = nn.ModuleList()
         for i in range(cnn_layers):
-            
+
             block = Dilation_Block(dim, kernel_size)
             self.layers.append(block)
         
@@ -267,7 +270,7 @@ class CNN_FLOW(nn.Module):
             output, logdet = self.layers[i](output)
             # revert the dimension of the output after each block
             if self.use_revert:
-                output = output.mm(self.R)
+                z = output.mm(self.R)
             logdetSum += logdet
 
-        return output, logdetSum
+        return z, logdetSum
