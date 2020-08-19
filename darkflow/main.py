@@ -20,12 +20,8 @@ def run(args):
         network = ConvNetRunner(args=args)
 
         if args.train_net:
-            if args.test_net:
-                args.test_net = False
-                network.trainer()
-                args.test_net = True
-            else:
-                network.trainer()
+            network.trainer()
+            
         if args.test_net:
             network.tester()
     
