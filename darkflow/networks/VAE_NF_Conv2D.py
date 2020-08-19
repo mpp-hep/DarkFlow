@@ -656,3 +656,6 @@ class ConvFlowVAE(ConvNet):
     """
     Variational auto-encoder with convolutional flows in the encoder.
     """
+
+    def __init__(self, args):
+        super(ConvFlowVAE, self).__init__(args)
