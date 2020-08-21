@@ -246,7 +246,7 @@ class IAF(nn.Module):
         return z, logdets
 
 
-class CNN_FLOW(nn.Module):
+class CNN_Flow(nn.Module):
     def __init__(self, dim, cnn_layers, kernel_size, use_revert=True):
         super(CNN_FLOW, self).__init__()
 

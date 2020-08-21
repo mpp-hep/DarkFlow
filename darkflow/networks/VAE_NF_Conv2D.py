@@ -665,7 +665,7 @@ class ConvFlowVAE(ConvNet):
         self.num_flows = args.num_flows
         self.kernel_size = args.convFlow_kernel_size
 
-        flow = flows.CNN_FLOW
+        flow = flows.CNN_Flow
 
         # Normalizing flow layers
         flow_k = flow(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)

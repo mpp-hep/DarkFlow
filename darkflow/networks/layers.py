@@ -143,7 +143,7 @@ class MaskedConv2d(nn.Module):
             + str(self.size_kernel) + ')'
 
 
-class CNN_FLOW_LAYER(nn.Module):
+class CNN_Flow_Layer(nn.Module):
     def __init__(self, dim, kernel_size, dilation, rescale=True, skip=True):
         super(CNN_FLOW_LAYER, self).__init__()
 
@@ -196,7 +196,7 @@ class CNN_FLOW_LAYER(nn.Module):
         return output, logdet
         
 
-class DILATION_BLOCK(nn.Module):
+class Dilation_Block(nn.Module):
     def __init__(self, dim, kernel_size):
         super(DILATION_BLOCK, self).__init__()
 
