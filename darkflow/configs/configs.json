@@ -1,5 +1,7 @@
 {
  "model_name": "VAE_ConvFlow_Conv2D_2EP",
+ "train_net": 0,
+ "test_net": 0,
  "num_classes": 1,
  "training_fraction": 0.8,
  "batch_size": 16,

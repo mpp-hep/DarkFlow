@@ -248,7 +248,7 @@ class IAF(nn.Module):
 
 class CNN_Flow(nn.Module):
     def __init__(self, dim, cnn_layers, kernel_size, use_revert=True):
-        super(CNN_FLOW, self).__init__()
+        super(CNN_Flow, self).__init__()
 
         # prepare reversion matrix
         self.usecuda = True

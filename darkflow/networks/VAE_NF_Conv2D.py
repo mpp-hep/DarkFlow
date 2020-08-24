@@ -665,10 +665,10 @@ class ConvFlowVAE(ConvNet):
         self.num_flows = args.num_flows
         self.kernel_size = args.convFlow_kernel_size
 
-        flow = flows.CNN_Flow
+        flow_k = flows.CNN_Flow
 
         # Normalizing flow layers
-        flow_k = flow(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)
+        self.flow = flow_k(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)
 
     def forward(self, x):
 
