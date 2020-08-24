@@ -1,7 +1,11 @@
 {
+<<<<<<< HEAD
  "model_name": "VAE_ConvFlow_Conv2D_2EP",
  "train_net": 0,
  "test_net": 0,
+=======
+ "model_name": "VAE_PlanarF_Conv2D_runBestModel_7EP",
+>>>>>>> darkflow_stable
  "num_classes": 1,
  "training_fraction": 0.8,
  "batch_size": 16,
@@ -9,7 +13,11 @@
  "learning_rate": 0.001,
  "latent_dim": 10,
  "beta": 1,       
+<<<<<<< HEAD
  "num_epochs": 2,
+=======
+ "num_epochs": 7,
+>>>>>>> darkflow_stable
  "data_save_path": "/home/pjawahar/Projects/DarkFlow/",
  "Data_filename": "/home/pjawahar/Projects/DarkFlow/Data/d_sm_10fb.npy",
  "Data_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/d_bsm_10fb_test.npy",
@@ -23,6 +31,10 @@
  "num_flows" : 4, 
  "num_ortho_vecs" : 8,
  "num_householder" : 8,
+<<<<<<< HEAD
  "made_h_size" : 320,
  "convFlow_kernel_size" : 5
+=======
+ "made_h_size" : 320
+>>>>>>> darkflow_stable
 }

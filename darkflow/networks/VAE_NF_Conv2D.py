@@ -650,6 +650,7 @@ class IAFVAE(ConvNet):
         # decode
         x_decoded = self.decode(z_k)
 
+<<<<<<< HEAD
         return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
 
 class ConvFlowVAE(ConvNet):
@@ -687,3 +688,6 @@ class ConvFlowVAE(ConvNet):
         return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
 
 
+=======
+        return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
+>>>>>>> darkflow_stable

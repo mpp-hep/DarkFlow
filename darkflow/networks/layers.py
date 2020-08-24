@@ -142,6 +142,7 @@ class MaskedConv2d(nn.Module):
             + str(bias) + ', size_kernel=' \
             + str(self.size_kernel) + ')'
 
+<<<<<<< HEAD
 
 class CNN_Flow_Layer(nn.Module):
     def __init__(self, dim, kernel_size, dilation, rescale=True, skip=True):
@@ -218,3 +219,5 @@ class Dilation_Block(nn.Module):
         
 
 
+=======
+>>>>>>> darkflow_stable
