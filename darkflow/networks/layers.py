@@ -142,3 +142,82 @@ class MaskedConv2d(nn.Module):
             + str(bias) + ', size_kernel=' \
             + str(self.size_kernel) + ')'
 
+<<<<<<< HEAD
+
+class CNN_Flow_Layer(nn.Module):
+    def __init__(self, dim, kernel_size, dilation, rescale=True, skip=True):
+        super(CNN_Flow_Layer, self).__init__()
+
+        self.dim = dim
+        self.kernel_size = kernel_size
+        self.dilation = dilation
+        self.rescale = rescale
+        self.skip = skip
+        self.usecuda = True
+
+        if self.rescale: # last layer of flow needs to account for the scale of target variable
+            self.lmbd = nn.Parameter(torch.FloatTensor(self.dim).normal_().cuda())
+        
+        self.conv1d = nn.Conv1d(1, 1, kernel_size, dilation=dilation)
+            
+    def forward(self, x):
+
+        # pad zero to the right
+        padded_x = F.pad(x, (0, (self.kernel_size-1) * self.dilation))
+
+        conv1d = self.conv1d(padded_x.unsqueeze(1)).squeeze() #(bs, 1, width)
+
+        w = self.conv1d.weight.squeeze()        
+
+        # make sure u[i]w[0] >= -1 to ensure invertibility for h(x)=tanh(x) and with skip
+
+        neg_slope = 1e-2
+        activation = F.leaky_relu(conv1d, negative_slope=neg_slope)
+        activation_gradient = ((activation>=0).float() + (activation<0).float()*neg_slope)
+
+        # for 0<=h'(x)<=1, ensure u*w[0]>-1
+        scale = (w[0] == 0).float() * self.lmbd \
+                +(w[0] > 0).float() * (-1./w[0] + F.softplus(self.lmbd)) \
+                +(w[0] < 0).float() * (-1./w[0] - F.softplus(self.lmbd))
+
+        
+        if self.rescale:
+            output = activation.mm(torch.diag(scale))
+            activation_gradient = activation_gradient.mm(torch.diag(scale))
+        else:
+            output = activation
+
+        if self.skip:
+            output = output + x
+            logdet = torch.log(torch.abs(activation_gradient*w[0] + 1)).sum(1)
+        
+        else:
+            logdet = torch.log(torch.abs(activation_gradient*w[0])).sum(1)
+
+        return output, logdet
+        
+
+class Dilation_Block(nn.Module):
+    def __init__(self, dim, kernel_size):
+        super(Dilation_Block, self).__init__()
+
+        self.block = nn.ModuleList()
+        i = 0
+        while 2**i <= dim:
+            conv1d = CNN_Flow_Layer(dim, kernel_size, dilation=2**i)
+            self.block.append(conv1d)
+            i+= 1
+
+    def forward(self, x):
+        logdetSum = 0
+        output = x
+        for i in range(len(self.block)):
+            output, logdet = self.block[i](output)
+            logdetSum += logdet
+
+        return output, logdetSum
+        
+
+
+=======
+>>>>>>> darkflow_stable
