@@ -8,16 +8,11 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-<<<<<<< HEAD
 import numpy as np
 import math
 import sys
 
 from networks.layers import MaskedConv2d, MaskedLinear, CNN_Flow_Layer, Dilation_Block
-=======
-
-from networks.layers import MaskedConv2d, MaskedLinear
->>>>>>> darkflow_stable
 
 
 class Planar(nn.Module):
@@ -249,7 +244,6 @@ class IAF(nn.Module):
             z = gate * z + (1 - gate) * mean
             logdets += torch.sum(gate.log().view(gate.size(0), -1), 1)
         return z, logdets
-<<<<<<< HEAD
 
 
 class CNN_Flow(nn.Module):
@@ -280,5 +274,3 @@ class CNN_Flow(nn.Module):
             logdetSum += logdet
 
         return z, logdetSum
-=======
->>>>>>> darkflow_stable
