@@ -15,11 +15,7 @@ import numpy as np
 import h5py
 from tqdm import tqdm
 
-<<<<<<< HEAD
-from darkflow.utils.data_utils import save_npy, read_npy, save_run_history
-=======
 from darkflow.utils.data_utils import save_npy, read_npy
->>>>>>> darkflow_stable
 from darkflow.utils.network_utils import compute_loss, train_net, test_net
 import darkflow.networks.VAE_NF_Conv2D as VAE
 
@@ -61,13 +57,8 @@ class ConvNetRunner:
             self.model = VAE.TriangularSylvesterVAE(args)
         if self.flow == 'iaf':
             self.model = VAE.IAFVAE(args)
-<<<<<<< HEAD
-        if self.flow == 'convflow':
-            self.model = VAE.ConvFlowVAE(args)
-=======
         # if self.flow == 'convflow':
         #     self.model = VAE.ConvFlow(args)
->>>>>>> darkflow_stable
         else:
             raise ValueError('Invalid flow choice')
         
@@ -156,15 +147,10 @@ class ConvNetRunner:
     def trainer(self):
         self.train_loader = DataLoader(dataset = self.x_train, batch_size = self.batch_size, shuffle=False)
         self.val_loader = DataLoader(dataset = self.x_val, batch_size = self.batch_size, shuffle=False)
-<<<<<<< HEAD
-        self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.batch_size, shuffle=False)
-        self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.batch_size, shuffle=False)
-=======
         # self.test_loader = DataLoader(dataset = self.x_test, batch_size = self.test_batchsize, shuffle=False)
         self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.batch_size, shuffle=False)
         self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.batch_size, shuffle=False)
         # self.weight_test_loader = DataLoader(dataset = self.weight_test, batch_size = self.test_batchsize, shuffle=False)
->>>>>>> darkflow_stable
 
         # to store training history
         self.x_graph = []
@@ -211,15 +197,6 @@ class ConvNetRunner:
                 val_kl_aux += val_kl
                 val_rec_aux += val_eucl
 
-<<<<<<< HEAD
-            self.train_y_loss.append(tr_loss_aux.cpu().detach().numpy()/(len(self.train_loader)))
-            self.train_y_kl.append(tr_kl_aux.cpu().detach().numpy()/(len(self.train_loader)))
-            self.train_y_rec.append(tr_rec_aux.cpu().detach().numpy()/(len(self.train_loader)))
-                
-            self.val_y_loss.append(val_loss_aux/(len(self.val_loader)))
-            self.val_y_kl.append(val_kl_aux/(len(self.val_loader)))
-            self.val_y_rec.append(val_rec_aux/(len(self.val_loader)))
-=======
             self.train_y_loss.append(tr_loss_aux.cpu().detach().numpy()/(len(train_loader)))
             self.train_y_kl.append(tr_kl_aux.cpu().detach().numpy()/(len(train_loader)))
             self.train_y_rec.append(tr_rec_aux.cpu().detach().numpy()/(len(train_loader)))
@@ -227,7 +204,6 @@ class ConvNetRunner:
             self.val_y_loss.append(val_loss_aux/(len(val_loader)))
             self.val_y_kl.append(val_kl_aux/(len(val_loader)))
             self.val_y_rec.append(val_rec_aux/(len(val_loader)))
->>>>>>> darkflow_stable
                 
             print('Epoch: {} -- Train loss: {}  -- Val loss: {}'.format(epoch, 
                                                                          tr_loss_aux/(len(self.train_loader)), 

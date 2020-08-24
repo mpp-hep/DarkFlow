@@ -8,16 +8,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-<<<<<<< HEAD
-import numpy as np
-import math
-import sys
-
-from networks.layers import MaskedConv2d, MaskedLinear, CNN_Flow_Layer, Dilation_Block
-=======
 
 from networks.layers import MaskedConv2d, MaskedLinear
->>>>>>> darkflow_stable
 
 
 class Planar(nn.Module):
@@ -249,36 +241,3 @@ class IAF(nn.Module):
             z = gate * z + (1 - gate) * mean
             logdets += torch.sum(gate.log().view(gate.size(0), -1), 1)
         return z, logdets
-<<<<<<< HEAD
-
-
-class CNN_Flow(nn.Module):
-    def __init__(self, dim, cnn_layers, kernel_size, use_revert=True):
-        super(CNN_Flow, self).__init__()
-
-        # prepare reversion matrix
-        self.usecuda = True
-        self.use_revert = use_revert
-        self.R = Variable(torch.from_numpy(np.flip(np.eye(dim), axis=1).copy()).float(), requires_grad=False)
-        if self.usecuda:
-            self.R = self.R.cuda()
-        
-        self.layers = nn.ModuleList()
-        for i in range(cnn_layers):
-
-            block = Dilation_Block(dim, kernel_size)
-            self.layers.append(block)
-        
-    def forward(self, x):
-        logdetSum = 0
-        output = x
-        for i in range(len(self.layers)):
-            output, logdet = self.layers[i](output)
-            # revert the dimension of the output after each block
-            if self.use_revert:
-                z = output.mm(self.R)
-            logdetSum += logdet
-
-        return z, logdetSum
-=======
->>>>>>> darkflow_stable
