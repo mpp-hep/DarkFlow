@@ -651,3 +651,39 @@ class IAFVAE(ConvNet):
         x_decoded = self.decode(z_k)
 
         return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
+
+class ConvFlowVAE(ConvNet):
+    """
+    Variational auto-encoder with convolutional flows in the encoder.
+    """
+
+    def __init__(self, args):
+        super(ConvFlowVAE, self).__init__(args)
+
+        # Initialize log-det-jacobian to zero
+        self.log_det_j = 0
+        self.num_flows = args.num_flows
+        self.kernel_size = args.convFlow_kernel_size
+
+        flow_k = flows.CNN_Flow
+
+        # Normalizing flow layers
+        self.flow = flow_k(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)
+
+    def forward(self, x):
+
+        self.log_det_j = 0
+
+        # mean and variance of z
+        z_mu, z_var = self.encode(x)
+        # sample z
+        z_0 = self.reparameterize(z_mu, z_var)
+
+        # Normalizing flows
+        z_k, logdet = self.flow(z_0)
+
+        x_decoded = self.decode(z_k)
+
+        return x_decoded, z_mu, z_var, self.log_det_j, z_0, z_k
+
+
