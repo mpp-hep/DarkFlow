@@ -247,7 +247,7 @@ class IAF(nn.Module):
 
 
 class CNN_Flow(nn.Module):
-    def __init__(self, dim, cnn_layers, kernel_size, use_revert=True):
+    def __init__(self, dim, cnn_layers, kernel_size, test_mode=0, use_revert=True):
         super(CNN_Flow, self).__init__()
 
         # prepare reversion matrix
@@ -260,7 +260,7 @@ class CNN_Flow(nn.Module):
         self.layers = nn.ModuleList()
         for i in range(cnn_layers):
 
-            block = Dilation_Block(dim, kernel_size)
+            block = Dilation_Block(dim, kernel_size, test_mode)
             self.layers.append(block)
         
     def forward(self, x):

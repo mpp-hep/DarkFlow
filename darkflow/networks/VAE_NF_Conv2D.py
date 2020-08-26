@@ -20,6 +20,7 @@ class ConvNet(nn.Module):
             super(ConvNet, self).__init__()
 
             self.latent_dim = args.latent_dim
+            self.test_mode = args.test_net
 
             if args.train_net:
                 self.batch_size = args.batch_size
@@ -141,7 +142,6 @@ class PlanarVAE(ConvNet):
         mean  = self.q_z_mean(out)
         logvar = self.q_z_logvar(out)
       
-
         # return amortized u an w for all flows
         u = self.amor_u(out).view(batch_size, self.num_flows, self.z_size, 1)
         w = self.amor_w(out).view(batch_size, self.num_flows, 1, self.z_size)
@@ -668,7 +668,7 @@ class ConvFlowVAE(ConvNet):
         flow_k = flows.CNN_Flow
 
         # Normalizing flow layers
-        self.flow = flow_k(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size)
+        self.flow = flow_k(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size, test_mode=self.test_mode)
 
     def forward(self, x):
 
