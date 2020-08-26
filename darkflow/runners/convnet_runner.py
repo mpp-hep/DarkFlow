@@ -246,9 +246,9 @@ class ConvNetRunner:
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
             self.test_ev_rec.append(te_eucl.cpu().detach().numpy())
         # print('loss: ', test_ev_loss)
-        save_npy(np.array(self.test_ev_loss), self.test_data_save_path + 'IAF_loss_2EP_BEST.npy')
-        save_npy(np.array(self.test_ev_kl), self.test_data_save_path + 'IAF_kl_2EP_BEST.npy')
-        save_npy(np.array(self.test_ev_rec), self.test_data_save_path + 'IAF_rec_2EP_BEST.npy')
+        save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
+        save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
+        save_npy(np.array(self.test_ev_rec), self.test_data_save_path + '%s_rec.npy' %self.model_name)
 
         print('Testing Complete')
 
