@@ -41,7 +41,7 @@ def save_csv(data, columns, filename):
     df.to_csv(filename, index=False)
     print('** Done **')
 
-def csv_to_hf5(directory):
+def csv_to_hf5(directory, channel):
     data = []    
     for fname in os.scandir(directory):
         with open(fname, 'r') as file:
@@ -78,14 +78,14 @@ def csv_to_hf5(directory):
     list_of_lists = [col_names[i: j] for i, j in zip([0] + indices, indices + ([len(col_names)] if indices[-1] != len(col_names) else []))]
 
     #Change the path below for a specific name for the hf5 file
-    out_file = h5py.File('data_N.hf5', 'w')
+    out_file = h5py.File('/home/pjawahar/Projects/DarkFlow/Data/data_%s.hf5' %channel, 'w')
 
     dt = h5py.special_dtype(vlen = str)
 
     out_file.create_dataset('event_ID', data = df['event_ID'].astype('float16'), compression = 'gzip')
     out_file.create_dataset('process_ID', data = df['process_ID'], compression = 'gzip', dtype = dt)
     out_file.create_dataset('event_weight', data = df['event_weight'].astype('int'), compression = 'gzip')
-    out_file.create_dataset('MET_values', data = df[['MET', 'MET_Phi']].astype('float16'), compression = 'gzip')
+    out_file.create_dataset('MET_values', data = df[['MET', 'MET_Phi']].astype('float64'), compression = 'gzip')
 
     for entry in list_of_lists[1:]:
         out_file.create_dataset(entry[0], data = df[entry], compression = 'gzip', dtype = dt)
@@ -161,7 +161,7 @@ def hf5_to_npy(file, channel):
 
     data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
-    save_npy(d, data_save_path + 'Data/d_sm_%s_jets.npy' %channel)
+    save_npy(data_f, data_save_path + 'Data/d_sm_%s.npy' %channel)
     print('**Done**')
 
     return data_f, event_weight
