@@ -41,7 +41,7 @@ def save_csv(data, columns, filename):
     df.to_csv(filename, index=False)
     print('** Done **')
 
-def csv_to_hdf5(directory):
+def csv_to_hf5(directory):
     data = []    
     for fname in os.scandir(directory):
         with open(fname, 'r') as file:
@@ -91,6 +91,80 @@ def csv_to_hdf5(directory):
         out_file.create_dataset(entry[0], data = df[entry], compression = 'gzip', dtype = dt)
 
     out_file.close()
+
+def hf5_to_npy(file, channel):
+    print('Starting to process h5py file . . .')
+
+    data_save_path = "/home/pjawahar/Projects/DarkFlow/"
+    f = h5py.File(file, "r")
+    keys = list(f.keys())
+    data_all = []
+
+    for k in keys:
+        data_all.append(f.get(k))
+
+    met_values = np.array(data_all[0])
+    # met = met[][0]
+    event_ID = np.array(data_all[1])
+    event_weight = np.array(data_all[2])
+    process_ID = np.array(data_all[-1])
+
+    # Extracting objects data
+    data = data_all[3:-1]
+    # Preparing to convert dataset to array
+    d = np.array(data[0])
+
+    for p in data[1:]:
+        d = np.concatenate((d,p), axis=1)
+
+    jets = np.full((d.shape[0],13,4), -999, dtype=float)
+    bjets = np.full((d.shape[0],6,4), -999, dtype=float)
+    MPlus = np.full((d.shape[0],6,4), -999, dtype=float)
+    MMinus = np.full((d.shape[0],6,4), -999, dtype=float)
+    EPlus = np.full((d.shape[0],6,4), -999, dtype=float)
+    EMinus = np.full((d.shape[0],6,4), -999, dtype=float)
+    Gamma = np.full((d.shape[0],6,4), -999, dtype=float)
+        
+    for i in range(d.shape[0]):
+        ct_j = 0
+        ct_bj = 0
+        ct_mm = 0
+        ct_ep = 0
+        ct_em = 0
+        ct_g = 0
+        ct_mp = 0
+
+        for j in range(d.shape[1]):
+            if d[i][j] == 'j':
+                jets[i][ct_j] = d[i][j+1:j+5]
+                ct_j += 1
+            elif d[i][j] == 'b':
+                bjets[i][ct_bj] = d[i][j+1:j+5]
+                ct_bj += 1
+            elif d[i][j] == 'm+':
+                MPlus[i][ct_mp] = d[i][j+1:j+5]
+                ct_mp += 1
+            elif d[i][j] == 'm-':
+                MMinus[i][ct_mm] = d[i][j+1:j+5]
+                ct_mm += 1
+            elif d[i][j] == 'e+':
+                EPlus[i][ct_ep] = d[i][j+1:j+5]
+                ct_ep += 1
+            elif d[i][j] == 'e-':
+                EMinus[i][ct_em] = d[i][j+1:j+5]
+                ct_em += 1
+            elif d[i][j] == 'g':
+                Gamma[i][ct_g] = d[i][j+1:j+5]
+                ct_g += 1
+            else:
+                flag = 1
+
+    data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
+    data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
+    save_npy(d, data_save_path + 'Data/d_sm_%s_jets.npy' %channel)
+    print('**Done**')
+
+    return data_f, event_weight
 
 def save_run_history(best_model, model, model_save_path, model_name, x_graph, train_y_rec, train_y_kl, train_y_loss, hist_name):
     # Save the model
