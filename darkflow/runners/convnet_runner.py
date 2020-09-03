@@ -76,24 +76,24 @@ class ConvNetRunner:
 
         print('Starting to process data ...')
         weight = met[:,1]
-        evtId =  met[:,0]
+        Met =  met[:,0]
         weight_bsm = met_bsm[:,1]
-        evtId_bsm =  met_bsm[:,0]
-        met = np.array(met[:,-2:], dtype='f')
+        Met_bsm =  met_bsm[:,0]
+        # met = np.array(met[:,-2:], dtype='f')
 
         # suffle data
-        d, met, weight, evtId = shuffle(d, met, weight, evtId, random_state=0)
-        self.d_bsm, self.weight_bsm, evtId_bsm = shuffle(d_bsm, weight_bsm, evtId_bsm, random_state=0)
+        d, met, weight, Met = shuffle(d, met, weight, Met, random_state=0)
+        self.d_bsm, self.weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
         # Taking samples where pT>20GeV
-        idx = []
-        for i in range(d.shape[0]):
-            if((d[i,:,3,0]*d[i,:,3,0]+d[i,:,3,1]*d[i,:,3,1])>400):
-                idx.append(i)
-        d = d[idx,:,:,:]
-        met = met[idx,:]
-        weight = weight[idx]
-        evtId = evtId[idx]
+        # idx = []
+        # for i in range(d.shape[0]):
+        #     if((d[i,:,3,0]*d[i,:,3,0]+d[i,:,3,1]*d[i,:,3,1])>400):
+        #         idx.append(i)
+        # d = d[idx,:,:,:]
+        # met = met[idx,:]
+        # weight = weight[idx]
+        # evtId = evtId[idx]
 
         # standardize particle inputs
         scaler_p = StandardScaler()
@@ -103,12 +103,25 @@ class ConvNetRunner:
         d = scaler_p.transform(d)
         d = np.reshape(d, d_shape)
 
-        scaler_p = StandardScaler()
+        scaler_b = StandardScaler()
         d_bsm_shape = d_bsm.shape
         d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
-        scaler_p.fit(d_bsm)
-        d_bsm = scaler_p.transform(d_bsm)
+        scaler_b.fit(d_bsm)
+        d_bsm = scaler_b.transform(d_bsm)
         d_bsm = np.reshape(d_bsm, d_bsm_shape)
+
+        # standardize met inputs
+        scaler_met = StandardScaler()
+        scaler_met.fit(Met)
+        Met = scaler_met.transform(Met)
+
+        scaler_mb = StandardScaler()
+        scaler_mb.fit(Met_bsm)
+        Met_bsm = scaler_mb.transform(Met_bsm)
+
+        # concatenate d and Met
+        d = np.concatenate((d,Met), axis=2)
+        d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
         self.d_test = d[:2013,:,:,:]
@@ -119,10 +132,6 @@ class ConvNetRunner:
         self.d = d[2014:,:,:,:]
         self.weight = weight[2014:]
 
-        # # standardize met inputs
-        # scaler_met = StandardScaler()
-        # scaler_met.fit(met)
-        # met = scaler_met.transform(met)
         # save the scalers
         # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
         # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))

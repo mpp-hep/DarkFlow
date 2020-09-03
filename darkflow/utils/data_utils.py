@@ -104,7 +104,7 @@ def hf5_to_npy(file, channel):
         data_all.append(f.get(k))
 
     met_values = np.array(data_all[0])
-    # met = met[][0]
+    met = met_values[:,0]
     event_ID = np.array(data_all[1])
     event_weight = np.array(data_all[2])
     process_ID = np.array(data_all[-1])
@@ -161,10 +161,14 @@ def hf5_to_npy(file, channel):
 
     data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
+    met = np.reshape(met, (met.shape[0], 1))
+    met = np.c_[met, event_weight]
+    
     save_npy(data_f, data_save_path + 'Data/d_sm_%s.npy' %channel)
+    save_npy(met, data_save_path + 'Data/met_%s.npy' %channel)
     print('**Done**')
 
-    return data_f, event_weight
+    return data_f, met_values, event_weight
 
 def save_run_history(best_model, model, model_save_path, model_name, x_graph, train_y_rec, train_y_kl, train_y_loss, hist_name):
     # Save the model
