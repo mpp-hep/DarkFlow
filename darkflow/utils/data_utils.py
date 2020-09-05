@@ -84,7 +84,7 @@ def csv_to_hf5(directory, channel):
 
     out_file.create_dataset('event_ID', data = df['event_ID'].astype('float16'), compression = 'gzip')
     out_file.create_dataset('process_ID', data = df['process_ID'], compression = 'gzip', dtype = dt)
-    out_file.create_dataset('event_weight', data = df['event_weight'].astype('int'), compression = 'gzip')
+    out_file.create_dataset('event_weight', data = df['event_weight'].astype('float16'), compression = 'gzip')
     out_file.create_dataset('MET_values', data = df[['MET', 'MET_Phi']].astype('float64'), compression = 'gzip')
 
     for entry in list_of_lists[1:]:
@@ -117,13 +117,16 @@ def hf5_to_npy(file, channel):
     for p in data[1:]:
         d = np.concatenate((d,p), axis=1)
 
-    jets = np.full((d.shape[0],13,4), -999, dtype=float)
-    bjets = np.full((d.shape[0],6,4), -999, dtype=float)
-    MPlus = np.full((d.shape[0],6,4), -999, dtype=float)
-    MMinus = np.full((d.shape[0],6,4), -999, dtype=float)
-    EPlus = np.full((d.shape[0],6,4), -999, dtype=float)
-    EMinus = np.full((d.shape[0],6,4), -999, dtype=float)
-    Gamma = np.full((d.shape[0],6,4), -999, dtype=float)
+    jets_per_evt = 19 
+    obj_per_evt = 12 
+
+    jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
+    bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    MPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    MMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    EPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    EMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    Gamma = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
         
     for i in range(d.shape[0]):
         ct_j = 0
@@ -136,24 +139,31 @@ def hf5_to_npy(file, channel):
 
         for j in range(d.shape[1]):
             if d[i][j] == 'j':
+                # while ct_j < jets_per_evt:
                 jets[i][ct_j] = d[i][j+1:j+5]
                 ct_j += 1
             elif d[i][j] == 'b':
+                # while ct_bj < obj_per_evt:
                 bjets[i][ct_bj] = d[i][j+1:j+5]
                 ct_bj += 1
             elif d[i][j] == 'm+':
+                # while ct_mp < obj_per_evt:
                 MPlus[i][ct_mp] = d[i][j+1:j+5]
                 ct_mp += 1
             elif d[i][j] == 'm-':
+                # while ct_mm < obj_per_evt:
                 MMinus[i][ct_mm] = d[i][j+1:j+5]
                 ct_mm += 1
             elif d[i][j] == 'e+':
+                # while ct_ep < obj_per_evt:
                 EPlus[i][ct_ep] = d[i][j+1:j+5]
                 ct_ep += 1
             elif d[i][j] == 'e-':
+                # while ct_em < obj_per_evt:
                 EMinus[i][ct_em] = d[i][j+1:j+5]
                 ct_em += 1
             elif d[i][j] == 'g':
+                # while ct_g < obj_per_evt:
                 Gamma[i][ct_g] = d[i][j+1:j+5]
                 ct_g += 1
             else:
@@ -163,9 +173,9 @@ def hf5_to_npy(file, channel):
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
     met = np.reshape(met, (met.shape[0], 1))
     met = np.c_[met, event_weight]
-    
-    save_npy(data_f, data_save_path + 'Data/d_sm_%s.npy' %channel)
-    save_npy(met, data_save_path + 'Data/met_%s.npy' %channel)
+    # print('Data shape: ', data_f.shape)
+    save_npy(data_f, data_save_path + 'Data/npy/d_sm_%s.npy' %channel)
+    save_npy(met, data_save_path + 'Data/npy/met_%s.npy' %channel)
     print('**Done**')
 
     return data_f, met_values, event_weight

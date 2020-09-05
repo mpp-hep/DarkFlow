@@ -21,16 +21,16 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     x_pos = x[:,0,:,:] 
     # Changes the dimension of the tensor so that dist is the distance between every 
     # pair of input and output pixels
-    x_pos = x_pos.view(batch_size, 4, 1, 26) 
+    x_pos = x_pos.view(batch_size, 4, 1, 92) 
     
-    x_decoded_pos = torch.zeros(batch_size,4,26)#.cuda()
+    x_decoded_pos = torch.zeros(batch_size,4,92)#.cuda()
     # Removes the channel dimension to make the following calculations easier
     x_decoded_pos = x_decoded[:,0,:,:] 
     
     # Changes the dimension of the tensor so that dist is the distance between 
     # every pair of input and output pixels
-    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 26, 1) 
-    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 26, -1) 
+    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 92, 1) 
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 92, -1) 
     
     dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
     
@@ -61,6 +61,7 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
 # Train
 def train_net(model, x_train, wt_train, optimizer, batch_size):
     input_train = x_train[:, :, :, :].cuda()
+    input_train = input_train.float()
     wt_train = wt_train[:].cuda()
     model.train()   
 
@@ -80,6 +81,7 @@ def test_net(model, x_test, wt_test, batch_size):
     model.eval()
     with torch.no_grad():
         input_test = x_test[:, :, :, :].cuda()
+        input_test = input_test.float()
         wt_test = wt_test[:].cuda()
 
         x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test)
