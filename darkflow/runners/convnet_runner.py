@@ -135,7 +135,7 @@ class ConvNetRunner:
         self.d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
-        self.d_test = d[:1025333,:,:,:]
+        self.d_test = d[:1025333,:,:,:] #1025333 for chan3. 2013 for others
         self.weight_sm = weight[:1025333]
         self.x_test = np.append(self.d_test, self.d_bsm, axis=0)
         self.weight_test = np.append(self.weight_sm, self.weight_bsm, axis=0)

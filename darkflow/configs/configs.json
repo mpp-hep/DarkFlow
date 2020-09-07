@@ -1,5 +1,5 @@
 {
- "model_name": "Chan3_VAE_Conv2D_ConvFlow_zeropad_8EP_LSpace_50",
+ "model_name": "Chan1_VAE_Conv2D_ConvFlow_zeropad_8EP_LSpace_50",
  "train_net": 0,
  "test_net": 0,
  "num_classes": 1,
@@ -16,7 +16,7 @@
  "Met_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/met_chan3_zeropad.npy",
  "Met_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/signals/met_chan3_zeropad_sig.npy",
  "model_save_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/",
- "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/BEST_Chan3_VAE_Conv2D_ConvFlow_zeropad_8EP.pt",
+ "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/Chan3_VAE_Conv2D_ConvFlow_zeropad_8EP_LSpace_50.pt",
  "test_data_save_path" : "/home/pjawahar/Projects/DarkFlow/Data/challenge_results/chan3/",
 
  "q_z_output_dim" : 120,
