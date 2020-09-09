@@ -117,8 +117,8 @@ def hf5_to_npy(file, channel):
     for p in data[1:]:
         d = np.concatenate((d,p), axis=1)
 
-    jets_per_evt = 19 
-    obj_per_evt = 12 
+    jets_per_evt = 13 
+    obj_per_evt = 3 
 
     jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
     bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
@@ -139,33 +139,33 @@ def hf5_to_npy(file, channel):
 
         for j in range(d.shape[1]):
             if d[i][j] == 'j':
-                # while ct_j < jets_per_evt:
-                jets[i][ct_j] = d[i][j+1:j+5]
-                ct_j += 1
+                if ct_j < jets_per_evt:
+                    jets[i][ct_j] = d[i][j+1:j+5]
+                    ct_j += 1
             elif d[i][j] == 'b':
-                # while ct_bj < obj_per_evt:
-                bjets[i][ct_bj] = d[i][j+1:j+5]
-                ct_bj += 1
+                if ct_bj < obj_per_evt:
+                    bjets[i][ct_bj] = d[i][j+1:j+5]
+                    ct_bj += 1
             elif d[i][j] == 'm+':
-                # while ct_mp < obj_per_evt:
-                MPlus[i][ct_mp] = d[i][j+1:j+5]
-                ct_mp += 1
+                if ct_mp < obj_per_evt:
+                    MPlus[i][ct_mp] = d[i][j+1:j+5]
+                    ct_mp += 1
             elif d[i][j] == 'm-':
-                # while ct_mm < obj_per_evt:
-                MMinus[i][ct_mm] = d[i][j+1:j+5]
-                ct_mm += 1
+                if ct_mm < obj_per_evt:
+                    MMinus[i][ct_mm] = d[i][j+1:j+5]
+                    ct_mm += 1
             elif d[i][j] == 'e+':
-                # while ct_ep < obj_per_evt:
-                EPlus[i][ct_ep] = d[i][j+1:j+5]
-                ct_ep += 1
+                if ct_ep < obj_per_evt:
+                    EPlus[i][ct_ep] = d[i][j+1:j+5]
+                    ct_ep += 1
             elif d[i][j] == 'e-':
-                # while ct_em < obj_per_evt:
-                EMinus[i][ct_em] = d[i][j+1:j+5]
-                ct_em += 1
+                if ct_em < obj_per_evt:
+                    EMinus[i][ct_em] = d[i][j+1:j+5]
+                    ct_em += 1
             elif d[i][j] == 'g':
-                # while ct_g < obj_per_evt:
-                Gamma[i][ct_g] = d[i][j+1:j+5]
-                ct_g += 1
+                if ct_g < obj_per_evt:
+                    Gamma[i][ct_g] = d[i][j+1:j+5]
+                    ct_g += 1
             else:
                 flag = 1
 
