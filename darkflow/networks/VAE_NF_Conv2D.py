@@ -42,19 +42,15 @@ class ConvNet(nn.Module):
                   nn.ReLU()
                   ) 
             #
-            self.dense1 = nn.Linear(640,240)
-            self.dnn_bn1 = nn.BatchNorm1d(240)
-            self.dense2 = nn.Linear(240,self.q_z_output_dim)
-            self.dnn_bn2 = nn.BatchNorm1d(self.q_z_output_dim)
+            self.dense1 = nn.Linear(160,self.q_z_output_dim)
+            self.dnn_bn1 = nn.BatchNorm1d(self.q_z_output_dim)
             self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
             self.q_z_logvar = nn.Linear(self.q_z_output_dim, self.latent_dim)
             #
             self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
             self.dnn_bn3 = nn.BatchNorm1d(self.q_z_output_dim)
-            self.dense4 = nn.Linear(self.q_z_output_dim, 240)
-            self.dnn_bn4 = nn.BatchNorm1d(240)
-            self.dense5 = nn.Linear(240, 640)
-            self.dnn_bn5 = nn.BatchNorm1d(640)
+            self.dense4 = nn.Linear(self.q_z_output_dim, 160)
+            self.dnn_bn4 = nn.BatchNorm1d(160)
             #
             self.p_x_nn = nn.Sequential(
                   nn.ConvTranspose2d(8, 16, kernel_size=(7,1), stride=(1), padding=(0)),
@@ -76,8 +72,6 @@ class ConvNet(nn.Module):
             # dense Layer 1
             out = self.dense1(out)
             out = self.dnn_bn1(out)
-            out = self.dense2(out)
-            out = self.dnn_bn2(out)
             out = torch.relu(out)
             # dense Layer 2
             mean  = self.q_z_mean(out)
@@ -88,15 +82,13 @@ class ConvNet(nn.Module):
             # dense Layer 3
             out = self.dense3(z)
             out = self.dnn_bn3(out)
+            out = torch.relu(out)
+            # dense Layer 4
             out = self.dense4(out)
             out = self.dnn_bn4(out)
             out = torch.relu(out)
-            # dense Layer 4
-            out = self.dense5(out)
-            out = self.dnn_bn5(out)
-            out = torch.relu(out)
             # reshape
-            out = out.view(self.batch_size, 8, 80, 1)
+            out = out.view(self.batch_size, 8, 20, 1)
             # DeConv
             out = self.p_x_nn(out)
             
@@ -145,8 +137,6 @@ class PlanarVAE(ConvNet):
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
-        out = self.dense2(out)
-        out = self.dnn_bn2(out)
         out = torch.relu(out)
         # dense Layer 2
         mean  = self.q_z_mean(out)
@@ -293,8 +283,6 @@ class OrthogonalSylvesterVAE(ConvNet):
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
-        out = self.dense2(out)
-        out = self.dnn_bn2(out)
         out = torch.relu(out)
         # dense Layer 2
         mean  = self.q_z_mean(out)
@@ -443,8 +431,6 @@ class HouseholderSylvesterVAE(ConvNet):
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
-        out = self.dense2(out)
-        out = self.dnn_bn2(out)
         out = torch.relu(out)
         # dense Layer 2
         mean  = self.q_z_mean(out)
@@ -559,8 +545,6 @@ class TriangularSylvesterVAE(ConvNet):
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
-        out = self.dense2(out)
-        out = self.dnn_bn2(out)
         out = torch.relu(out)
         # dense Layer 2
         mean  = self.q_z_mean(out)
@@ -643,8 +627,6 @@ class IAFVAE(ConvNet):
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
-        out = self.dense2(out)
-        out = self.dnn_bn2(out)
         out = torch.relu(out)
         # dense Layer 2
         mean  = self.q_z_mean(out)
