@@ -29,7 +29,7 @@ def run(args):
 
         if args.train_net:
             network.trainer()
-            network.tester() # Remove later
+            # network.tester() # Remove later
             
         if args.test_net:
             network.tester()

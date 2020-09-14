@@ -78,13 +78,13 @@ class ConvNetRunner:
         print('Starting to process data ...')
         weight = met[:,1]
         Met =  met[:,0]
-        weight_bsm = met_bsm[:,1]
+        weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
         Met_bsm =  met_bsm[:,0]
         # met = np.array(met[:,-2:], dtype='f')
 
         # suffle data
         d, weight, Met = shuffle(d, weight, Met, random_state=0)
-        self.d_bsm, self.weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
+        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
         # Taking samples where pT>20GeV
         # idx = []
@@ -132,16 +132,16 @@ class ConvNetRunner:
         Met = np.reshape(Met, (Met.shape[0],1,1,Met.shape[1]))
         Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1,1,Met_bsm.shape[1]))
         d = np.concatenate((d,Met), axis=2)
-        self.d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
+        d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
-        self.d_test = d[:10000,:,:,:] #1025333 for chan3. 10000 for chan1
-        self.weight_sm = weight[:10000]
-        self.x_test = np.append(self.d_test, self.d_bsm, axis=0)
-        self.weight_test = np.append(self.weight_sm, self.weight_bsm, axis=0)
+        self.d_test = d[:1025333,:,:,:] #1025333 for chan3. 10000 for chan1
+        self.weight_sm = weight[:1025333]
+        self.x_test = np.append(self.d_test, d_bsm, axis=0)
+        self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
 
-        self.d = d[10001:,:,:,:]
-        self.weight = weight[10001:]
+        self.d = d[1025334:,:,:,:]
+        self.weight = weight[1025334:]
 
         # save the scalers
         # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
