@@ -1,0 +1,15 @@
+mkdir $1
+mkdir $1/sm
+# download the BSM sample from DarkMachines zenodo community
+#wget https://zenodo.org/record/3685861/files/bsm.tgz
+#tar -xzf bsm.tgz 
+#mv bsm_10fb  bsm_full $1
+#rm bsm.tgz
+
+# download SM sample from DarkMachines zenodo community
+cd $1/sm/
+wget https://zenodo.org/record/3685861/files/sm.tgz
+tar -xzf sm.tgz 
+rm sm.tgz
+cd - 
+
