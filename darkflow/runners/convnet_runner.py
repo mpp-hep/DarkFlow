@@ -135,13 +135,14 @@ class ConvNetRunner:
         d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
-        self.d_test = d[:1025333,:,:,:] #1025333 for chan3. 10000 for chan1
-        self.weight_sm = weight[:1025333]
+        num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | ____ for chan2
+        self.d_test = d[:num_test_ev_sm,:,:,:] 
+        self.weight_sm = weight[:num_test_ev_sm]
         self.x_test = np.append(self.d_test, d_bsm, axis=0)
         self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
 
-        self.d = d[1025334:,:,:,:]
-        self.weight = weight[1025334:]
+        self.d = d[(num_test_ev_sm+1):,:,:,:]
+        self.weight = weight[(num_test_ev_sm+1):]
 
         # save the scalers
         # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
