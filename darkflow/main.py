@@ -8,7 +8,7 @@ def parse():
     parser.add_argument('--mode', type=str, default='training', choices=['training', 'testing'], help='Choose if are you training or testing the model')
     parser.add_argument('--configs_file', type=str, default='/home/pjawahar/Projects/DarkFlow/darkflow/configs/configs.json')
     parser.add_argument('--network', type=str, default='convnet', choices=['convnet'])
-    parser.add_argument('--flow', type=str, default='none', choices=['none', 'planar', 'orthosnf', 'householdersnf', 'triangularsnf', 'iaf', 'convflow'])
+    parser.add_argument('--flow', type=str, default='noflow', choices=['noflow', 'planar', 'orthosnf', 'householdersnf', 'triangularsnf', 'iaf', 'convflow'])
     args = parser.parse_args()
     return args
 

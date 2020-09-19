@@ -44,20 +44,21 @@ class ConvNetRunner:
 
         self.network = args.network
         self.flow = args.flow 
+        # print(args.flow, self.flow)
 
-        if self.flow == 'none':
+        if self.flow == 'noflow':
             self.model = VAE.ConvNet(args)
-        if self.flow == 'planar':
+        elif self.flow == 'planar':
             self.model = VAE.PlanarVAE(args)
-        if self.flow == 'orthosnf':
+        elif self.flow == 'orthosnf':
             self.model = VAE.OrthogonalSylvesterVAE(args)
-        if self.flow == 'householdersnf':
+        elif self.flow == 'householdersnf':
             self.model = VAE.HouseholderSylvesterVAE(args)
-        if self.flow == 'triangularsnf':
+        elif self.flow == 'triangularsnf':
             self.model = VAE.TriangularSylvesterVAE(args)
-        if self.flow == 'iaf':
+        elif self.flow == 'iaf':
             self.model = VAE.IAFVAE(args)
-        if self.flow == 'convflow':
+        elif self.flow == 'convflow':
             self.model = VAE.ConvFlowVAE(args)
         else:
             raise ValueError('Invalid flow choice')
@@ -76,24 +77,24 @@ class ConvNetRunner:
 
         print('Starting to process data ...')
         weight = met[:,1]
-        evtId =  met[:,0]
-        weight_bsm = met_bsm[:,1]
-        evtId_bsm =  met_bsm[:,0]
-        met = np.array(met[:,-2:], dtype='f')
+        Met =  met[:,0]
+        weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
+        Met_bsm =  met_bsm[:,0]
+        # met = np.array(met[:,-2:], dtype='f')
 
         # suffle data
-        d, met, weight, evtId = shuffle(d, met, weight, evtId, random_state=0)
-        self.d_bsm, self.weight_bsm, evtId_bsm = shuffle(d_bsm, weight_bsm, evtId_bsm, random_state=0)
+        d, weight, Met = shuffle(d, weight, Met, random_state=0)
+        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
         # Taking samples where pT>20GeV
-        idx = []
-        for i in range(d.shape[0]):
-            if((d[i,:,3,0]*d[i,:,3,0]+d[i,:,3,1]*d[i,:,3,1])>400):
-                idx.append(i)
-        d = d[idx,:,:,:]
-        met = met[idx,:]
-        weight = weight[idx]
-        evtId = evtId[idx]
+        # idx = []
+        # for i in range(d.shape[0]):
+        #     if((d[i,:,3,0]*d[i,:,3,0]+d[i,:,3,1]*d[i,:,3,1])>400):
+        #         idx.append(i)
+        # d = d[idx,:,:,:]
+        # met = met[idx,:]
+        # weight = weight[idx]
+        # evtId = evtId[idx]
 
         # standardize particle inputs
         scaler_p = StandardScaler()
@@ -103,26 +104,46 @@ class ConvNetRunner:
         d = scaler_p.transform(d)
         d = np.reshape(d, d_shape)
 
-        scaler_p = StandardScaler()
+        scaler_b = StandardScaler()
         d_bsm_shape = d_bsm.shape
         d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
-        scaler_p.fit(d_bsm)
-        d_bsm = scaler_p.transform(d_bsm)
+        scaler_b.fit(d_bsm)
+        d_bsm = scaler_b.transform(d_bsm)
         d_bsm = np.reshape(d_bsm, d_bsm_shape)
 
+        # standardize met inputs
+        Met = np.reshape(Met, (Met.shape[0],1))
+        scaler_met = StandardScaler()
+        scaler_met.fit(Met)
+        Met = scaler_met.transform(Met)
+
+        Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
+        scaler_mb = StandardScaler()
+        scaler_mb.fit(Met_bsm)
+        Met_bsm = scaler_mb.transform(Met_bsm)
+
+        # manage Met shapes to concatenate with d
+        met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
+        met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
+        Met = np.concatenate((Met,met_pad), axis=1)
+        Met_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
+
+        # concatenate d and Met
+        Met = np.reshape(Met, (Met.shape[0],1,1,Met.shape[1]))
+        Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1,1,Met_bsm.shape[1]))
+        d = np.concatenate((d,Met), axis=2)
+        d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
+
         #Build test set
-        self.d_test = d[:2013,:,:,:]
-        self.weight_sm = weight[:2013]
-        self.x_test = np.append(self.d_test, self.d_bsm, axis=0)
-        self.weight_test = np.append(self.weight_sm, self.weight_bsm, axis=0)
+        num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | ____ for chan2
+        self.d_test = d[:num_test_ev_sm,:,:,:] 
+        self.weight_sm = weight[:num_test_ev_sm]
+        self.x_test = np.append(self.d_test, d_bsm, axis=0)
+        self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
 
-        self.d = d[2014:,:,:,:]
-        self.weight = weight[2014:]
+        self.d = d[(num_test_ev_sm+1):,:,:,:]
+        self.weight = weight[(num_test_ev_sm+1):]
 
-        # # standardize met inputs
-        # scaler_met = StandardScaler()
-        # scaler_met.fit(met)
-        # met = scaler_met.transform(met)
         # save the scalers
         # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
         # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))

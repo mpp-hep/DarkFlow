@@ -42,15 +42,15 @@ class ConvNet(nn.Module):
                   nn.ReLU()
                   ) 
             #
-            self.dense1 = nn.Linear(112,self.q_z_output_dim)
+            self.dense1 = nn.Linear(160,self.q_z_output_dim)
             self.dnn_bn1 = nn.BatchNorm1d(self.q_z_output_dim)
             self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
             self.q_z_logvar = nn.Linear(self.q_z_output_dim, self.latent_dim)
             #
             self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
             self.dnn_bn3 = nn.BatchNorm1d(self.q_z_output_dim)
-            self.dense4 = nn.Linear(self.q_z_output_dim, 112)
-            self.dnn_bn4 = nn.BatchNorm1d(112)
+            self.dense4 = nn.Linear(self.q_z_output_dim, 160)
+            self.dnn_bn4 = nn.BatchNorm1d(160)
             #
             self.p_x_nn = nn.Sequential(
                   nn.ConvTranspose2d(8, 16, kernel_size=(7,1), stride=(1), padding=(0)),
@@ -88,7 +88,7 @@ class ConvNet(nn.Module):
             out = self.dnn_bn4(out)
             out = torch.relu(out)
             # reshape
-            out = out.view(self.batch_size, 8, 14, 1)
+            out = out.view(self.batch_size, 8, 20, 1)
             # DeConv
             out = self.p_x_nn(out)
             
