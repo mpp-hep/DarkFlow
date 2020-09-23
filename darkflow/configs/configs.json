@@ -1,5 +1,5 @@
 {
- "model_name": "Chan3_VAE_Conv2D_ConvF_zeropad_32dim_w1_10EP_LSpace_15",
+ "model_name": "Chan3_VAE_Conv2D_ConvF7K_zeropad_32dim_w1_10EP_LSpace_15",
  "train_net": 0,
  "test_net": 0,
  "num_classes": 1,
@@ -16,13 +16,13 @@
  "Met_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/met_chan3_zeropad_32dim.npy",
  "Met_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/signals/met_chan3_zeropad_32dim_sig.npy",
  "model_save_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/",
- "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/Chan3_VAE_Conv2D_ConvF_zeropad_32dim_w1_10EP_LSpace_15.pt",
+ "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/Chan3_VAE_Conv2D_ConvF7K_zeropad_32dim_w1_10EP_LSpace_15.pt",
  "test_data_save_path" : "/home/pjawahar/Projects/DarkFlow/Data/challenge_results/chan3/",
 
  "q_z_output_dim" : 20,
- "num_flows" : 4, 
+ "num_flows" : 6, 
  "num_ortho_vecs" : 8,
- "num_householder" : 8,
+ "num_householder" : 12,
  "made_h_size" : 330,
- "convFlow_kernel_size" : 5
+ "convFlow_kernel_size" : 7
 }

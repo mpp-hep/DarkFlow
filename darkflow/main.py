@@ -40,3 +40,24 @@ if __name__ == '__main__':
     configs = {**configs, **args}
     configs = AttributeDict(configs)
     run(configs)
+
+"""
+Current Configs:
+
+ "num_classes": 1,
+ "training_fraction": 0.98,
+ "batch_size": 16,
+ "test_batch_size": 1,
+ "learning_rate": 0.001,
+ "latent_dim": 15,
+ "beta": 1,       
+ "num_epochs": 10,
+
+ "q_z_output_dim" : 20,
+ "num_flows" : 6,         # 4 gave problematic ROC
+ "num_ortho_vecs" : 8,
+ "num_householder" : 12,  # 8 gave problematic ROC
+ "made_h_size" : 330,
+ "convFlow_kernel_size" : 7  # 5 gave problematic ROC
+ 
+"""
