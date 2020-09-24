@@ -54,10 +54,10 @@ Current Configs:
  "num_epochs": 10,
 
  "q_z_output_dim" : 20,
- "num_flows" : 6,         # 4 gave problematic ROC
+ "num_flows" : 6,         # 4 gave problematic ROC for PF. Keep at 4 for ConvF
  "num_ortho_vecs" : 8,
  "num_householder" : 12,  # 8 gave problematic ROC
  "made_h_size" : 330,
  "convFlow_kernel_size" : 7  # 5 gave problematic ROC
- 
+
 """
