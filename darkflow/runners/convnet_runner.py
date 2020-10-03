@@ -48,21 +48,29 @@ class ConvNetRunner:
 
         if self.flow == 'noflow':
             self.model = VAE.ConvNet(args)
+            self.flow_ID = 'NoF'
         elif self.flow == 'planar':
             self.model = VAE.PlanarVAE(args)
+            self.flow_ID = 'Planar'
         elif self.flow == 'orthosnf':
             self.model = VAE.OrthogonalSylvesterVAE(args)
+            self.flow_ID = 'Ortho'
         elif self.flow == 'householdersnf':
             self.model = VAE.HouseholderSylvesterVAE(args)
+            self.flow_ID = 'House'
         elif self.flow == 'triangularsnf':
             self.model = VAE.TriangularSylvesterVAE(args)
+            self.flow_ID = 'Tri'
         elif self.flow == 'iaf':
             self.model = VAE.IAFVAE(args)
+            self.flow_ID = 'IAF'
         elif self.flow == 'convflow':
             self.model = VAE.ConvFlowVAE(args)
+            self.flow_ID = 'ConvF'
         else:
             raise ValueError('Invalid flow choice')
         
+        self.model_name = self.model_name%self.flow_ID
         self.model = self.model.cuda()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
@@ -135,7 +143,7 @@ class ConvNetRunner:
         d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
-        num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | ____ for chan2
+        num_test_ev_sm = 10000     #1025333 for chan3 | 10000 for chan1 | ____ for chan2
         self.d_test = d[:num_test_ev_sm,:,:,:] 
         self.weight_sm = weight[:num_test_ev_sm]
         self.x_test = np.append(self.d_test, d_bsm, axis=0)
@@ -181,7 +189,7 @@ class ConvNetRunner:
         self.val_y_loss = []
 
         # print('Model Parameter: ', self.model)
-
+        print('Model Type: %s'%self.flow_ID)
         print('Initiating training, validation processes ...')
         for epoch in range(self.num_epochs):
             self.x_graph.append(epoch)
@@ -247,7 +255,7 @@ class ConvNetRunner:
     def tester(self):
         
         # load model
-        self.model.load_state_dict(torch.load(self.test_model_path, map_location=torch.device('cpu')))
+        self.model.load_state_dict(torch.load(self.test_model_path%self.flow_ID, map_location=torch.device('cpu')))
 
         # load data
         self.test_loader = DataLoader(dataset=self.x_test, batch_size=self.test_batch_size, shuffle=False)

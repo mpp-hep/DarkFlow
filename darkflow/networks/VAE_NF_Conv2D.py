@@ -662,7 +662,7 @@ class ConvFlowVAE(ConvNet):
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0
-        self.num_flows = args.num_flows
+        self.num_flows = 7 #args.num_flows
         self.kernel_size = args.convFlow_kernel_size
 
         flow_k = flows.CNN_Flow
