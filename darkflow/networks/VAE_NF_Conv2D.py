@@ -615,7 +615,7 @@ class IAFVAE(ConvNet):
         self.h_context = nn.Linear(self.q_z_output_dim, self.h_size)
 
         # Flow parameters
-        self.num_flows = args.num_flows
+        self.num_flows = args.num_flows # 4 for chan1
         self.flow = flows.IAF(z_size=self.z_size, num_flows=self.num_flows,
                               num_hidden=1, h_size=self.h_size, conv2d=False)
 
@@ -662,7 +662,7 @@ class ConvFlowVAE(ConvNet):
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0
-        self.num_flows = 7 #args.num_flows
+        self.num_flows = args.num_flows # 6 for chan1
         self.kernel_size = args.convFlow_kernel_size
 
         flow_k = flows.CNN_Flow

@@ -143,7 +143,7 @@ class ConvNetRunner:
         d_bsm = np.concatenate((d_bsm,Met_bsm), axis=2)
 
         #Build test set
-        num_test_ev_sm = 10000     #1025333 for chan3 | 10000 for chan1 | ____ for chan2
+        num_test_ev_sm = 89000     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2
         self.d_test = d[:num_test_ev_sm,:,:,:] 
         self.weight_sm = weight[:num_test_ev_sm]
         self.x_test = np.append(self.d_test, d_bsm, axis=0)
