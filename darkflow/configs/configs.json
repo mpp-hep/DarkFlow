@@ -1,5 +1,5 @@
 {
- "model_name": "Chan2a_VAE_Conv2D_%s_zeropad_32dim_w1_20EP_lrE4_LSpace_15",
+ "model_name": "Chan2a_VAE_Conv2D_%s_zeropad_32dim_w1_50EP_lrE4_LSpace_15",
  "train_net": 0,
  "test_net": 0,
  "num_classes": 1,
@@ -9,14 +9,14 @@
  "learning_rate": 0.0001,
  "latent_dim": 15,
  "beta": 1,       
- "num_epochs": 20,
+ "num_epochs": 50,
  "data_save_path": "/home/pjawahar/Projects/DarkFlow/",
  "Data_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/d_sm_chan2a_zeropad_32dim.npy",
  "Data_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/signals/d_sm_chan2a_zeropad_32dim_sig.npy",
  "Met_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/met_chan2a_zeropad_32dim.npy",
  "Met_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/signals/met_chan2a_zeropad_32dim_sig.npy",
  "model_save_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan2a/",
- "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan2a/Chan2a_VAE_Conv2D_%s_zeropad_32dim_w1_20EP_lrE4_LSpace_15.pt",
+ "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan2a/Chan2a_VAE_Conv2D_%s_zeropad_32dim_w1_50EP_lrE4_LSpace_15.pt",
  "test_data_save_path" : "/home/pjawahar/Projects/DarkFlow/Data/challenge_results/chan2a/",
 
  "q_z_output_dim" : 20,
