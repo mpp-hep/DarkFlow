@@ -92,7 +92,7 @@ class ConvNetRunner:
 
         # suffle data
         d, weight, Met = shuffle(d, weight, Met, random_state=0)
-        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
+        # d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
         # Taking samples where pT>20GeV
         # idx = []
