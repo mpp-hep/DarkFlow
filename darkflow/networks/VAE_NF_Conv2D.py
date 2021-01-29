@@ -183,7 +183,7 @@ class OrthogonalSylvesterVAE(ConvNet):
 
         # Flow parameters
         flow = flows.Sylvester
-        self.num_flows = 2 #args.num_flows
+        self.num_flows = 4#args.num_flows
         self.num_ortho_vecs = args.num_ortho_vecs
 
         assert (self.num_ortho_vecs <= self.z_size) and (self.num_ortho_vecs > 0)
@@ -351,7 +351,7 @@ class HouseholderSylvesterVAE(ConvNet):
 
         # Flow parameters
         flow = flows.Sylvester
-        self.num_flows = 4 # args.num_flows
+        self.num_flows = 4#args.num_flows
         self.num_householder = args.num_householder
         assert self.num_householder > 0
 
@@ -497,7 +497,7 @@ class TriangularSylvesterVAE(ConvNet):
 
         # Flow parameters
         flow = flows.TriangularSylvester
-        self.num_flows = 4 #args.num_flows
+        self.num_flows = 4#args.num_flows
 
         # permuting indices corresponding to Q=P (permutation matrix) for every other flow
         flip_idx = torch.arange(self.z_size - 1, -1, -1).long()
@@ -615,7 +615,7 @@ class IAFVAE(ConvNet):
         self.h_context = nn.Linear(self.q_z_output_dim, self.h_size)
 
         # Flow parameters
-        self.num_flows = 4 #args.num_flows # 4 for chan1
+        self.num_flows = 4#args.num_flows # 4 for chan1
         self.flow = flows.IAF(z_size=self.z_size, num_flows=self.num_flows,
                               num_hidden=1, h_size=self.h_size, conv2d=False)
 
@@ -662,7 +662,7 @@ class ConvFlowVAE(ConvNet):
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0
-        self.num_flows = 6 #args.num_flows # 6 for chan1
+        self.num_flows = 4#args.num_flows # 6 for chan1
         self.kernel_size = args.convFlow_kernel_size
 
         flow_k = flows.CNN_Flow

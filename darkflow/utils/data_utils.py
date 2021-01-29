@@ -82,7 +82,7 @@ def csv_to_hf5(directory, channel):
 
     dt = h5py.special_dtype(vlen = str)
 
-    out_file.create_dataset('event_ID', data = df['event_ID'].astype('float16'), compression = 'gzip')
+    out_file.create_dataset('event_ID', data = df['event_ID'], compression = 'gzip', dtype = dt)
     out_file.create_dataset('process_ID', data = df['process_ID'], compression = 'gzip', dtype = dt)
     out_file.create_dataset('event_weight', data = df['event_weight'].astype('float16'), compression = 'gzip')
     out_file.create_dataset('MET_values', data = df[['MET', 'MET_Phi']].astype('float64'), compression = 'gzip')
@@ -174,7 +174,7 @@ def hf5_to_npy(file, channel):
     met = np.reshape(met, (met.shape[0], 1))
     met = np.c_[met, event_weight]
     # print('Data shape: ', data_f.shape)
-    save_npy(data_f, data_save_path + 'Data/npy/d_sm_%s.npy' %channel)
+    save_npy(data_f, data_save_path + 'Data/npy/d_%s.npy' %channel)
     save_npy(met, data_save_path + 'Data/npy/met_%s.npy' %channel)
     print('**Done**')
 

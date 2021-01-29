@@ -15,7 +15,7 @@ import numpy as np
 import h5py
 from tqdm import tqdm
 
-from darkflow.utils.data_utils import save_npy, read_npy, save_run_history
+from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history
 from darkflow.utils.network_utils import compute_loss, train_net, test_net
 import darkflow.networks.VAE_NF_Conv2D as VAE
 
@@ -146,8 +146,10 @@ class ConvNetRunner:
         num_test_ev_sm = 5868     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2 | 5868 for chan2a
         self.d_test = d[:num_test_ev_sm,:,:,:] 
         self.weight_sm = weight[:num_test_ev_sm]
-        self.x_test = np.append(self.d_test, d_bsm, axis=0)
-        self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
+        # self.x_test = np.append(self.d_test, d_bsm, axis=0)
+        # self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
+        self.x_test = d_bsm
+        self.weight_test = weight_bsm
 
         self.d = d[(num_test_ev_sm+1):,:,:,:]
         self.weight = weight[(num_test_ev_sm+1):]
@@ -253,6 +255,8 @@ class ConvNetRunner:
         print('Network Run Complete')
 
     def tester(self):
+
+        print('Model Type: %s'%self.flow_ID)
         
         # load model
         self.model.load_state_dict(torch.load(self.test_model_path%self.flow_ID, map_location=torch.device('cpu')))
@@ -275,9 +279,10 @@ class ConvNetRunner:
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
             self.test_ev_rec.append(te_eucl.cpu().detach().numpy())
         # print('loss: ', test_ev_loss)
-        save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
-        save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
-        save_npy(np.array(self.test_ev_rec), self.test_data_save_path + '%s_rec.npy' %self.model_name)
+        # save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
+        # save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
+        save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s.npy' %self.model_name)
+        save_csv(data= np.array(self.test_ev_kl), columns= ['Scores'], filename= self.test_data_save_path + '%s.csv' %self.model_name)
 
         print('Testing Complete')
 
