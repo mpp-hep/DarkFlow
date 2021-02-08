@@ -351,7 +351,7 @@ class HouseholderSylvesterVAE(ConvNet):
 
         # Flow parameters
         flow = flows.Sylvester
-        self.num_flows = 4#args.num_flows
+        self.num_flows = 3#args.num_flows
         self.num_householder = args.num_householder
         assert self.num_householder > 0
 
@@ -662,7 +662,7 @@ class ConvFlowVAE(ConvNet):
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0
-        self.num_flows = 4#args.num_flows # 6 for chan1
+        self.num_flows = 6#args.num_flows # 6 for chan1
         self.kernel_size = args.convFlow_kernel_size
 
         flow_k = flows.CNN_Flow

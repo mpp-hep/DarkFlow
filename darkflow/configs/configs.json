@@ -1,5 +1,5 @@
 {
- "model_name": "C3Secret_%s_chan3",
+ "model_name": "2TestC1Secret_%s_chan1",
  "train_net": 0,
  "test_net": 0,
  "num_classes": 1,
@@ -12,17 +12,17 @@
  "num_epochs": 10,
  "data_save_path": "/home/pjawahar/Projects/DarkFlow/",
  "Data_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/d_sm_chan1_zeropad_32dim.npy",
- "Data_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/secret/d_chan3_secret.npy",
+ "Data_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/secret/d_chan1_secret.npy",
  "Met_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/background/met_chan1_zeropad_32dim.npy",
- "Met_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/secret/met_chan3_secret.npy",
+ "Met_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/npy/secret/met_chan1_secret.npy",
  "model_save_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan1/best/",
- "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan3/best/Chan3_VAE_Conv2D_%s.pt",
+ "test_model_path" : "/home/pjawahar/Projects/DarkFlow/darkflow/models/challenge_run/chan1/best/Chan1_VAE_Conv2D_%s.pt",
  "test_data_save_path" : "/home/pjawahar/Projects/DarkFlow/Data/challenge_results/secret/",
 
  "q_z_output_dim" : 20,
- "num_flows" : 6, 
+ "num_flows" : 2, 
  "num_ortho_vecs" : 8,
- "num_householder" : 12,
+ "num_householder" : 8,
  "made_h_size" : 330,
  "convFlow_kernel_size" : 7
 }

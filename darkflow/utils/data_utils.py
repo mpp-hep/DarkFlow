@@ -35,10 +35,10 @@ def read_npy(filename):
     return np.load(filename, allow_pickle=True)
 
 
-def save_csv(data, columns, filename):
+def save_csv(data, filename):
     print('Saving CSV file in ', filename)
-    df = pd.DataFrame(data, columns=columns)
-    df.to_csv(filename, index=False)
+    df = pd.DataFrame(data)
+    df.to_csv(filename, header=None , index=None)
     print('** Done **')
 
 def csv_to_hf5(directory, channel):

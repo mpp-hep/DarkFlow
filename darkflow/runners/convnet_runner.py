@@ -270,7 +270,7 @@ class ConvNetRunner:
         self.test_ev_kl = []
         self.test_ev_loss = []
         for y, (x_test, wt_test) in tqdm(enumerate(zip(self.test_loader, self.weight_test_loader))):
-            if y == (len(self.test_loader) - 1): break
+            if y == (len(self.test_loader)): break
             
             #Test
             te_loss, te_kl, te_eucl = test_net(self.model, x_test, wt_test, batch_size=self.test_batch_size)
@@ -281,8 +281,9 @@ class ConvNetRunner:
         # print('loss: ', test_ev_loss)
         # save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
         # save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
-        save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s.npy' %self.model_name)
-        save_csv(data= np.array(self.test_ev_kl), columns= ['Scores'], filename= self.test_data_save_path + '%s.csv' %self.model_name)
+        # save_npy(np.array(self.test_ev_rec), self.test_data_save_path + '%s.npy' %self.model_name)
+        save_csv(data= np.array(self.test_ev_kl), filename= self.test_data_save_path + 'rec_%s.csv' %self.model_name)
+        save_csv(data= np.array(self.test_ev_rec), filename= self.test_data_save_path + 'rec1_%s.csv' %self.model_name)
 
         print('Testing Complete')
 
