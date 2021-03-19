@@ -95,4 +95,6 @@ Current Configs (Chan2b):
  "num_householder" : 8,  
  "made_h_size" : 330,
  "convFlow_kernel_size" : 7  
+
+
 """
