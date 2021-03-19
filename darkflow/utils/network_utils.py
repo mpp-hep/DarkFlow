@@ -54,18 +54,19 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     reconstruction_loss = - eucl            
     # Compares mu = mean, sigma = exp(0.5 * logvar) gaussians with standard gaussians, with weight per event incorporated
     KL_divergence = 0.5 * torch.sum(weight * (torch.pow(mean, 2) + torch.exp(logvar) - logvar - 1.0)).sum() / batch_size 
-    ELBO = reconstruction_loss - (beta * KL_divergence) 
+    ELBO = 0.01*reconstruction_loss - 0.99(beta * KL_divergence) 
     loss = - ELBO
     return loss, (beta * KL_divergence), eucl
 
 # Train
-def train_net(model, x_train, wt_train, optimizer, batch_size):
-    input_train = x_train[:, :, :, :].cuda()
-    input_train = input_train.float()
+def train_net(model, x_train, met_train, wt_train, optimizer, batch_size):
+    input_train = x_train[:, :, :, :].cuda().float()
+    # input_train = input_train.float()
+    met_train = met_train.cuda()
     wt_train = wt_train[:].cuda()
     model.train()   
 
-    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train)
+    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, met_train)
 
     tr_loss, tr_kl, tr_eucl = compute_loss(input_train, wt_train, x_decoded, z_mu, z_var, batch_size=batch_size)
     
@@ -77,14 +78,15 @@ def train_net(model, x_train, wt_train, optimizer, batch_size):
     return tr_loss, tr_kl, tr_eucl, model
 
 # Test/Validate
-def test_net(model, x_test, wt_test, batch_size):
+def test_net(model, x_test, met_test, wt_test, batch_size):
     model.eval()
     with torch.no_grad():
-        input_test = x_test[:, :, :, :].cuda()
-        input_test = input_test.float()
+        input_test = x_test[:, :, :, :].cuda().float()
+        # input_test = input_test.float()
+        met_test = met_test.cuda()
         wt_test = wt_test[:].cuda()
 
-        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test)
+        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, met_test)
         
         te_loss, te_kl, te_eucl = compute_loss(input_test, wt_test, x_decoded, z_mu, z_var, batch_size=batch_size)
 

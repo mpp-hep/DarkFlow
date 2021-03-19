@@ -33,7 +33,7 @@ class Planar(nn.Module):
 
         zk = zk.unsqueeze(2)
 
-        # reparameterize u such that the flow becomes invertible (see appendix paper)
+        # reparameterize u such that the flow becomes invertible
         uw = torch.bmm(w, u)
         m_uw = -1. + self.softplus(uw)
         w_norm_sq = torch.sum(w ** 2, dim=2, keepdim=True)

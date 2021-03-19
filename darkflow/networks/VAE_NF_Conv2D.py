@@ -64,11 +64,12 @@ class ConvNet(nn.Module):
             # log-det-jacobian = 0 without flows
             self.ldj = 0
     
-        def encode(self, x):
+        def encode(self, x, y):
             
             out = self.q_z_nn(x)
             # flatten
             out = out.view(out.size(0), -1)
+            out = out.append(out, y)
             # dense Layer 1
             out = self.dense1(out)
             out = self.dnn_bn1(out)
@@ -88,6 +89,7 @@ class ConvNet(nn.Module):
             out = self.dnn_bn4(out)
             out = torch.relu(out)
             # reshape
+            out = out[:-1]
             out = out.view(self.batch_size, 8, 20, 1)
             # DeConv
             out = self.p_x_nn(out)
@@ -98,8 +100,8 @@ class ConvNet(nn.Module):
             z = mean + torch.randn_like(mean) * torch.exp(0.5 * logvar)
             return z
     
-        def forward(self, x):
-            mean, logvar = self.encode(x)
+        def forward(self, x, y):
+            mean, logvar = self.encode(x, y)
             z = self.reparameterize(mean, logvar)
             out = self.decode(z)
             return out, mean, logvar, self.ldj, z, z
@@ -127,13 +129,14 @@ class PlanarVAE(ConvNet):
             flow_k = flow()
             self.add_module('flow_' + str(k), flow_k)
 
-    def encode(self, x):
+    def encode(self, x, y):
 
         batch_size = x.size(0)
 
         out = self.q_z_nn(x)
         # flatten
         out = out.view(out.size(0), -1)
+        out = out.append(out, y)
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
@@ -149,11 +152,11 @@ class PlanarVAE(ConvNet):
 
         return mean, logvar, u, w, b
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         self.log_det_j = 0
 
-        z_mu, z_var, u, w, b = self.encode(x)
+        z_mu, z_var, u, w, b = self.encode(x, y)
 
         # Sample z_0
         z = [self.reparameterize(z_mu, z_var)]
@@ -273,13 +276,14 @@ class OrthogonalSylvesterVAE(ConvNet):
 
         return amat
 
-    def encode(self, x):
+    def encode(self, x, y):
 
         batch_size = x.size(0)
 
         out = self.q_z_nn(x)
         # flatten
         out = out.view(out.size(0), -1)
+        out = out.append(out, y)
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
@@ -312,11 +316,11 @@ class OrthogonalSylvesterVAE(ConvNet):
 
         return mean, logvar, r1, r2, q, b
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         self.log_det_j = 0
 
-        z_mu, z_var, r1, r2, q, b = self.encode(x)
+        z_mu, z_var, r1, r2, q, b = self.encode(x, y)
 
         # Orthogonalize all q matrices
         q_ortho = self.batch_construct_orthogonal(q)
@@ -421,13 +425,14 @@ class HouseholderSylvesterVAE(ConvNet):
 
         return amat
 
-    def encode(self, x):
+    def encode(self, x, y):
 
         batch_size = x.size(0)
 
         out = self.q_z_nn(x)
         # flatten
         out = out.view(out.size(0), -1)
+        out = out.append(out, y)
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
@@ -459,12 +464,12 @@ class HouseholderSylvesterVAE(ConvNet):
 
         return mean, logvar, r1, r2, q, b
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         self.log_det_j = 0
         batch_size = x.size(0)
 
-        z_mu, z_var, r1, r2, q, b = self.encode(x)
+        z_mu, z_var, r1, r2, q, b = self.encode(x, y)
 
         # Orthogonalize all q matrices
         q_ortho = self.batch_construct_orthogonal(q)
@@ -535,13 +540,14 @@ class TriangularSylvesterVAE(ConvNet):
 
             self.add_module('flow_' + str(k), flow_k)
 
-    def encode(self, x):
+    def encode(self, x, y):
 
         batch_size = x.size(0)
 
         out = self.q_z_nn(x)
         # flatten
         out = out.view(out.size(0), -1)
+        out = out.append(out, y)
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
@@ -571,11 +577,11 @@ class TriangularSylvesterVAE(ConvNet):
 
         return mean, logvar, r1, r2, b
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         self.log_det_j = 0
 
-        z_mu, z_var, r1, r2, b = self.encode(x)
+        z_mu, z_var, r1, r2, b = self.encode(x, y)
 
         # Sample z_0
         z = [self.reparameterize(z_mu, z_var)]
@@ -619,11 +625,12 @@ class IAFVAE(ConvNet):
         self.flow = flows.IAF(z_size=self.z_size, num_flows=self.num_flows,
                               num_hidden=1, h_size=self.h_size, conv2d=False)
 
-    def encode(self, x):
+    def encode(self, x, y):
         
         out = self.q_z_nn(x)
         # flatten
         out = out.view(out.size(0), -1)
+        out = out.append(out, y)
         # dense Layer 1
         out = self.dense1(out)
         out = self.dnn_bn1(out)
@@ -637,10 +644,10 @@ class IAFVAE(ConvNet):
 
         return mean, logvar, h_context
 
-    def forward(self, x):
+    def forward(self, x, y):
        
         # mean and variance of z
-        z_mu, z_var, h_context = self.encode(x)
+        z_mu, z_var, h_context = self.encode(x, y)
         # sample z
         z_0 = self.reparameterize(z_mu, z_var)
 
@@ -670,12 +677,12 @@ class ConvFlowVAE(ConvNet):
         # Normalizing flow layers
         self.flow = flow_k(dim=self.latent_dim, cnn_layers=self.num_flows, kernel_size=self.kernel_size, test_mode=self.test_mode)
 
-    def forward(self, x):
+    def forward(self, x, y):
 
         self.log_det_j = 0
 
         # mean and variance of z
-        z_mu, z_var = self.encode(x)
+        z_mu, z_var = self.encode(x, y)
         # sample z
         z_0 = self.reparameterize(z_mu, z_var)
 
