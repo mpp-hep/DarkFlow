@@ -117,8 +117,8 @@ def hf5_to_npy(file, channel):
     for p in data[1:]:
         d = np.concatenate((d,p), axis=1)
 
-    jets_per_evt = 13 
-    obj_per_evt = 3 
+    jets_per_evt = 4 
+    obj_per_evt = 2 
 
     jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
     bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)

@@ -7,7 +7,7 @@ import numpy as np
 
 
 #Sparse loss function    
-def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1e5):
+def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     # print('computing loss ...')
     # mean, logvar = model.encode(x)
     # z = model.reparameterize(mean, logvar)
@@ -21,16 +21,16 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1e5):
     x_pos = x[:,0,:,:] 
     # Changes the dimension of the tensor so that dist is the distance between every 
     # pair of input and output pixels
-    x_pos = x_pos.view(batch_size, 4, 1, 32) 
+    x_pos = x_pos.view(batch_size, 4, 1, 17) #32 full, 17-4LJ
     
-    x_decoded_pos = torch.zeros(batch_size,4,32)#.cuda()
+    x_decoded_pos = torch.zeros(batch_size,4,17)#.cuda()
     # Removes the channel dimension to make the following calculations easier
     x_decoded_pos = x_decoded[:,0,:,:] 
     
     # Changes the dimension of the tensor so that dist is the distance between 
     # every pair of input and output pixels
-    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 32, 1) 
-    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 32, -1) 
+    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 17, 1) 
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 17, -1) 
     
     dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
     
