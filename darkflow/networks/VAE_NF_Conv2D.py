@@ -42,15 +42,15 @@ class ConvNet(nn.Module):
                   nn.ReLU()
                   ) 
             #
-            self.dense1 = nn.Linear(41,self.q_z_output_dim) #161 - full+met, 160-full, 41-4LJ
+            self.dense1 = nn.Linear(161,self.q_z_output_dim) #161 - full+mult, 41-4LJ
             self.dnn_bn1 = nn.BatchNorm1d(self.q_z_output_dim)
             self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
             self.q_z_logvar = nn.Linear(self.q_z_output_dim, self.latent_dim)
             #
             self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
             self.dnn_bn3 = nn.BatchNorm1d(self.q_z_output_dim)
-            self.dense4 = nn.Linear(self.q_z_output_dim, 41)
-            self.dnn_bn4 = nn.BatchNorm1d(41)
+            self.dense4 = nn.Linear(self.q_z_output_dim, 161)
+            self.dnn_bn4 = nn.BatchNorm1d(161)
             #
             self.p_x_nn = nn.Sequential(
                   nn.ConvTranspose2d(8, 16, kernel_size=(7,1), stride=(1), padding=(0)),
@@ -92,7 +92,7 @@ class ConvNet(nn.Module):
             # remove met
             out = out[:,:-1]
             # reshape
-            out = out.view(out.size(0), 8, 5, 1) #20-full, 5-4LJ
+            out = out.view(out.size(0), 8, 20, 1) #20-full, 5-4LJ
             # DeConv
             out = self.p_x_nn(out)
             
