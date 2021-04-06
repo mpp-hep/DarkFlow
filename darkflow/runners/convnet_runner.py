@@ -44,7 +44,17 @@ class ConvNetRunner:
 
         self.network = args.network
         self.flow = args.flow 
+        self.channel = args.channel
         # print(args.flow, self.flow)
+
+        if self.channel == 'chan1':
+            self.num_test_ev_sm = 10000
+        elif self.channel == 'chan2a':
+            self.num_test_ev_sm = 5868
+        elif self.channel == 'chan2b':
+            self.num_test_ev_sm = 89000
+        elif self.channel == 'chan3':
+            self.num_test_ev_sm = 1025333
 
         if self.flow == 'noflow':
             self.model = VAE.ConvNet(args)
@@ -84,14 +94,16 @@ class ConvNetRunner:
         met_bsm = read_npy(self.Met_bsm_filename)
 
         print('Starting to process data ...')
-        weight = met[:,1]
+        weight = met[:,-1]
         Met =  met[:,0]
+        mult = met[:,1:-1] # event object pultiplicities
         weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
         Met_bsm =  met_bsm[:,0]
+        mult_bsm = met_bsm[:,1:-1]
 
         # suffle data
-        d, weight, Met = shuffle(d, weight, Met, random_state=0)
-        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
+        d, weight, Met, mult = shuffle(d, weight, Met, mult, random_state=0)
+        d_bsm, weight_bsm, Met_bsm, mult_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, mult_bsm, random_state=0)
 
         # standardize particle inputs
         scaler_p = StandardScaler()
@@ -131,8 +143,12 @@ class ConvNetRunner:
         d = np.concatenate((d,paddedMet), axis=2)
         d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
 
+        # concatenate multiplicities back to Met
+        Met = np.concatenate((Met, mult), axis=1)
+        Met_bsm = np.concatenate((Met_bsm, mult_bsm), axis=1)
+
         # Set aside bkg samples to form test set
-        num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2b | 5868 for chan2a
+        num_test_ev_sm = self.num_test_ev_sm     
         self.d_test = d[:num_test_ev_sm,:,:,:]
         self.Met_sm = Met[:num_test_ev_sm,:] 
         self.weight_sm = weight[:num_test_ev_sm]

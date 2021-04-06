@@ -117,8 +117,8 @@ def hf5_to_npy(file, channel):
     for p in data[1:]:
         d = np.concatenate((d,p), axis=1)
 
-    jets_per_evt = 4 #13
-    obj_per_evt = 2 #4
+    jets_per_evt = 13 #13
+    obj_per_evt = 4 #4
 
     jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
     bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
@@ -127,58 +127,77 @@ def hf5_to_npy(file, channel):
     EPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
     EMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
     Gamma = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    mult = np.full((d.shape[0], 7), 0, dtype=float) # count the object multiplicities per event
         
     for i in range(d.shape[0]):
         ct_j = 0
         ct_bj = 0
+        ct_mp = 0
         ct_mm = 0
         ct_ep = 0
         ct_em = 0
         ct_g = 0
-        ct_mp = 0
+        
+        c_j = 0
+        c_bj = 0
+        c_mp = 0
+        c_mm = 0
+        c_ep = 0
+        c_em = 0
+        c_g = 0
 
         for j in range(d.shape[1]):
             if d[i][j] == 'j':
+                c_j += 1
                 if ct_j < jets_per_evt:
                     jets[i][ct_j] = d[i][j+1:j+5]
                     ct_j += 1
             elif d[i][j] == 'b':
+                c_bj += 1
                 if ct_bj < obj_per_evt:
                     bjets[i][ct_bj] = d[i][j+1:j+5]
                     ct_bj += 1
             elif d[i][j] == 'm+':
+                c_mp += 1
                 if ct_mp < obj_per_evt:
                     MPlus[i][ct_mp] = d[i][j+1:j+5]
                     ct_mp += 1
             elif d[i][j] == 'm-':
+                c_mm += 1
                 if ct_mm < obj_per_evt:
                     MMinus[i][ct_mm] = d[i][j+1:j+5]
                     ct_mm += 1
             elif d[i][j] == 'e+':
+                c_ep += 1
                 if ct_ep < obj_per_evt:
                     EPlus[i][ct_ep] = d[i][j+1:j+5]
                     ct_ep += 1
             elif d[i][j] == 'e-':
+                c_em += 1
                 if ct_em < obj_per_evt:
                     EMinus[i][ct_em] = d[i][j+1:j+5]
                     ct_em += 1
             elif d[i][j] == 'g':
+                c_g += 1
                 if ct_g < obj_per_evt:
                     Gamma[i][ct_g] = d[i][j+1:j+5]
                     ct_g += 1
             else:
                 flag = 1
 
+        mult[i] = np.array([c_j, c_bj, c_mp, c_mm, c_ep, c_em, c_g])
+
     data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
     met = np.reshape(met, (met.shape[0], 1))
-    met = np.c_[met, event_weight]
+    met_mult = np.concatenate((met, mult), axis=1) # Concatenate the multiplicitites to met
+    met = np.c_[met_mult, event_weight]
     # print('Data shape: ', data_f.shape)
-    save_npy(data_f, data_save_path + 'Data/npy/d_%s.npy' %channel)
-    save_npy(met, data_save_path + 'Data/npy/met_%s.npy' %channel)
+    save_npy(data_f, data_save_path + 'Data/DMData/npy/d_%s.npy' %channel)
+    save_npy(met, data_save_path + 'Data/DMData/npy/met_%s.npy' %channel)
     print('**Done**')
 
-    return data_f, met_values, event_weight
+    return data_f, met
 
 def save_run_history(best_model, model, model_save_path, model_name, x_graph, train_y_rec, train_y_kl, train_y_loss, hist_name):
     # Save the model
