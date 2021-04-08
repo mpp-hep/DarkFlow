@@ -42,6 +42,7 @@ class ConvNet(nn.Module):
                   nn.ReLU()
                   ) 
             #
+            self.mult_bn1 = nn.BatchNorm1d(216) 
             self.dense1 = nn.Linear(216,self.q_z_output_dim) #161 - full(13+3)+met, 41-4LJ, 216 - full(13+4)+met+mult
             self.dnn_bn1 = nn.BatchNorm1d(self.q_z_output_dim)
             self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
@@ -69,8 +70,9 @@ class ConvNet(nn.Module):
             out = self.q_z_nn(x)
             # flatten
             out = out.view(out.size(0), -1)
-            # concat met
+            # concat met and mult then normalize
             out = torch.cat((out, y),axis=1)
+            out = self.mult_bn1(out)
             # dense Layer 1
             out = self.dense1(out)
             out = self.dnn_bn1(out)
