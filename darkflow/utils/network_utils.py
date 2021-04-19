@@ -21,16 +21,16 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     x_pos = x[:,0,:,:] 
     # Changes the dimension of the tensor so that dist is the distance between every 
     # pair of input and output pixels
-    x_pos = x_pos.view(batch_size, 4, 1, 32) 
+    x_pos = x_pos.view(batch_size, 4, 1, 38) #32 full(13+3), 17-4LJ
     
-    x_decoded_pos = torch.zeros(batch_size,4,32)#.cuda()
+    x_decoded_pos = torch.zeros(batch_size,4,38)#.cuda()
     # Removes the channel dimension to make the following calculations easier
     x_decoded_pos = x_decoded[:,0,:,:] 
     
     # Changes the dimension of the tensor so that dist is the distance between 
     # every pair of input and output pixels
-    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 32, 1) 
-    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 32, -1) 
+    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 38, 1) 
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 38, -1) 
     
     dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
     
@@ -59,13 +59,14 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     return loss, (beta * KL_divergence), eucl
 
 # Train
-def train_net(model, x_train, wt_train, optimizer, batch_size):
-    input_train = x_train[:, :, :, :].cuda()
-    input_train = input_train.float()
+def train_net(model, x_train, met_train, wt_train, optimizer, batch_size):
+    input_train = x_train[:, :, :, :].cuda().float()
+    # input_train = input_train.float()
+    met_train = met_train.cuda().float()
     wt_train = wt_train[:].cuda()
     model.train()   
 
-    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train)
+    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, met_train)
 
     tr_loss, tr_kl, tr_eucl = compute_loss(input_train, wt_train, x_decoded, z_mu, z_var, batch_size=batch_size)
     
@@ -77,14 +78,15 @@ def train_net(model, x_train, wt_train, optimizer, batch_size):
     return tr_loss, tr_kl, tr_eucl, model
 
 # Test/Validate
-def test_net(model, x_test, wt_test, batch_size):
+def test_net(model, x_test, met_test, wt_test, batch_size):
     model.eval()
     with torch.no_grad():
-        input_test = x_test[:, :, :, :].cuda()
-        input_test = input_test.float()
+        input_test = x_test[:, :, :, :].cuda().float()
+        # input_test = input_test.float()
+        met_test = met_test.cuda().float()
         wt_test = wt_test[:].cuda()
 
-        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test)
+        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, met_test)
         
         te_loss, te_kl, te_eucl = compute_loss(input_test, wt_test, x_decoded, z_mu, z_var, batch_size=batch_size)
 
