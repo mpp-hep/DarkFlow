@@ -44,7 +44,6 @@ class ConvNetRunner:
 
         self.network = args.network
         self.flow = args.flow 
-        self.channel = args.channel
         # print(args.flow, self.flow)
 
         if self.channel == 'chan1':
@@ -85,6 +84,96 @@ class ConvNetRunner:
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         self.preprocess_data()
+
+    def preprocess_data(self):
+        #Read data
+        d = read_npy(self.Data_filename)
+        d_bsm = read_npy(self.Data_bsm_filename)
+        met = read_npy(self.Met_filename)
+        met_bsm = read_npy(self.Met_bsm_filename)
+
+        print('Starting to process data ...')
+        weight = met[:,1]
+        Met =  met[:,0]
+        weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
+        Met_bsm =  met_bsm[:,0]
+
+        # suffle data
+        d, weight, Met = shuffle(d, weight, Met, random_state=0)
+        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
+
+        # standardize particle inputs
+        scaler_p = StandardScaler()
+        d_shape = d.shape
+        d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[3]))
+        scaler_p.fit(d)
+        d = scaler_p.transform(d)
+        d = np.reshape(d, d_shape)
+
+        scaler_b = StandardScaler()
+        d_bsm_shape = d_bsm.shape
+        d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
+        scaler_b.fit(d_bsm)
+        d_bsm = scaler_b.transform(d_bsm)
+        d_bsm = np.reshape(d_bsm, d_bsm_shape)
+
+        # standardize met inputs
+        Met = np.reshape(Met, (Met.shape[0],1))
+        scaler_met = StandardScaler()
+        scaler_met.fit(Met)
+        Met = scaler_met.transform(Met)
+
+        Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
+        scaler_mb = StandardScaler()
+        scaler_mb.fit(Met_bsm)
+        Met_bsm = scaler_mb.transform(Met_bsm)
+
+        # manage Met shapes to concatenate with d
+        met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
+        met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
+        paddedMet = np.concatenate((Met,met_pad), axis=1)
+        paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
+
+        # concatenate d and Met
+        paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
+        paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
+        d = np.concatenate((d,paddedMet), axis=2)
+        d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
+
+        # Set aside bkg samples to form test set
+        # num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2b | 5868 for chan2a
+        self.d_test = d[:num_test_ev_sm,:,:,:]
+        self.Met_sm = Met[:num_test_ev_sm,:] 
+        self.weight_sm = weight[:num_test_ev_sm]
+
+        # Build test set
+        self.x_test = np.append(self.d_test, d_bsm, axis=0)
+        self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
+        self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
+        
+        # Remaining data for train and val
+        self.d = d[(num_test_ev_sm+1):,:,:,:]
+        self.Met_d = Met[(num_test_ev_sm+1):,:] 
+        self.weight = weight[(num_test_ev_sm+1):]
+
+        # save the scalers
+        # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
+        # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))
+
+        # build train and val sets
+        i_train = int(self.d.shape[0]*self.training_fraction)
+        # training data
+        self.x_train = self.d[:i_train,:,:,:]
+        self.met_train = self.Met_d[:i_train,:] 
+        self.weight_train = self.weight[:i_train]
+        
+        # Val data
+        self.x_val = self.d[i_train:,:,:,:]
+        self.met_val = self.Met_d[i_train:,:]
+        self.weight_val = self.weight[i_train:]
+        
+        print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
+
 
     def preprocess_data_withMult(self):
         #Read data

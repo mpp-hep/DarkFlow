@@ -91,8 +91,8 @@ class ConvNet(nn.Module):
             out = self.dense4(out)
             out = self.dnn_bn4(out)
             out = torch.relu(out)
-            # remove met and multiplicities
-            out = out[:,:-8]
+            # remove met and multiplicities (if mult -8)
+            out = out[:,:-1]
             # reshape
             out = out.view(out.size(0), 8, 26, 1) #20-full(13+3), 5-4LJ, 26-full(13+4)
             # DeConv

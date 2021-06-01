@@ -11,6 +11,7 @@
  "latent_dim": 15,
  "beta": 1,       
  "num_epochs": 15,
+ "dropout": 0.2,
  "data_save_path": "/home/pjawahar/Projects/DarkFlow/",
  "Data_filename": "/home/pjawahar/Projects/DarkFlow/Data/DMData/npy/background/d_chan2a_32Dim_mult.npy",
  "Data_bsm_filename": "/home/pjawahar/Projects/DarkFlow/Data/DMData/npy/signals/d_chan2a_32Dim_mult_sig.npy",
