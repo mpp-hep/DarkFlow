@@ -17,10 +17,10 @@ from tqdm import tqdm
 
 from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history
 from darkflow.utils.network_utils import compute_loss, train_net, test_net
-import darkflow.networks.VAE_NF_Conv2D as VAE
+import darkflow.networks.VAE_NF_GCN as VAE
 
 
-class ConvNetRunner:
+class GCNNetRunner:
     def __init__(self, args):
 
         # Hyperparameters
@@ -56,7 +56,7 @@ class ConvNetRunner:
             self.num_test_ev_sm = 1025333
 
         if self.flow == 'noflow':
-            self.model = VAE.ConvNet(args)
+            self.model = VAE.GCNNet(args)
             self.flow_ID = 'NoF'
         elif self.flow == 'planar':
             self.model = VAE.PlanarVAE(args)
