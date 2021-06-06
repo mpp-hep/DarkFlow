@@ -51,7 +51,7 @@ class GCNNet(nn.Module):
     def encode(self, x, adj):
         out = F.relu(self.gc1(x, adj))
         out = F.dropout(out, self.dropout, training=self.training)
-        out = self.gc2(out, adj)
+        out = F.relu(self.gc2(out, adj))
         # flatten
         out = out.flatten()
         # dense layer 1

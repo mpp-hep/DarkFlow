@@ -10,12 +10,13 @@ import torchvision.transforms as transforms
 import torchvision.datasets
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
+import scipy.sparse as sp
 from pickle import dump
 import numpy as np
 import h5py
 from tqdm import tqdm
 
-from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history
+from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history, build_graph
 from darkflow.utils.network_utils import compute_loss, train_net, test_net
 import darkflow.networks.VAE_NF_GCN as VAE
 
@@ -174,6 +175,10 @@ class GCNNetRunner:
         
         print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
 
+        # build the graphs
+        self.features_train, self.adj_train = build_graph(x_train)
+        self.features_val, self.adj_val = build_graph(x_val)
+        self.features_test, self.adj_test = build_graph(x_test)
 
     # def preprocess_data_withMult(self):
     #     #Read data
@@ -272,13 +277,13 @@ class GCNNetRunner:
         
 
     def trainer(self):
-        self.train_loader = DataLoader(dataset = self.x_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.metTr_loader = DataLoader(dataset = self.met_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
+        self.train_loader = DataLoader(dataset = self.features_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.adjTr_loader = DataLoader(dataset = self.adj_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
-        self.val_loader = DataLoader(dataset = self.x_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.metVa_loader = DataLoader(dataset = self.met_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
+        self.val_loader = DataLoader(dataset = self.features_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.adjVa_loader = DataLoader(dataset = self.adj_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
         # to store training history
         self.x_graph = []
@@ -300,10 +305,10 @@ class GCNNetRunner:
             tr_loss_aux = 0.0
             tr_kl_aux = 0.0
             tr_rec_aux = 0.0
-            for y, (x_train, met_tr, wt_train) in tqdm(enumerate(zip(self.train_loader, self.metTr_loader, self.weight_train_loader))):
+            for y, (x_train, adj_tr, wt_train) in tqdm(enumerate(zip(self.train_loader, self.adjTr_loader, self.weight_train_loader))):
                 if y == (len(self.train_loader)): break
 
-                tr_loss, tr_kl, tr_eucl, self.model = train_net(self.model, x_train, met_tr, wt_train, self.optimizer, batch_size=self.batch_size)
+                tr_loss, tr_kl, tr_eucl, self.model = train_net(self.model, x_train, adj_tr, wt_train, self.optimizer, batch_size=self.test_batch_size)
                 
                 tr_loss_aux += tr_loss
                 tr_kl_aux += tr_kl
@@ -315,11 +320,11 @@ class GCNNetRunner:
             val_kl_aux = 0.0
             val_rec_aux = 0.0
 
-            for y, (x_val, met_va, wt_val) in tqdm(enumerate(zip(self.val_loader, self.metVa_loader, self.weight_val_loader))):
+            for y, (x_val, adj_va, wt_val) in tqdm(enumerate(zip(self.val_loader, self.adjVa_loader, self.weight_val_loader))):
                 if y == (len(self.val_loader)): break
                 
                 #Test
-                val_loss, val_kl, val_eucl = test_net(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
+                val_loss, val_kl, val_eucl = test_net(self.model, x_val, adj_va, wt_val, batch_size=self.test_batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -361,19 +366,19 @@ class GCNNetRunner:
         self.model.load_state_dict(torch.load(self.model_save_path + '%s.pt' %self.model_name, map_location=torch.device('cpu')))
 
         # load data
-        self.test_loader = DataLoader(dataset=self.x_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
-        self.metTe_loader = DataLoader(dataset=self.met_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
+        self.test_loader = DataLoader(dataset=self.features_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
+        self.adjTe_loader = DataLoader(dataset=self.adj_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
         self.weight_test_loader = DataLoader(dataset=self.weight_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
 
         print('Starting the Testing Process ...')
         self.test_ev_rec = []
         self.test_ev_kl = []
         self.test_ev_loss = []
-        for y, (x_test, met_te, wt_test) in tqdm(enumerate(zip(self.test_loader, self.metTe_loader, self.weight_test_loader))):
+        for y, (x_test, adj_te, wt_test) in tqdm(enumerate(zip(self.test_loader, self.adjTe_loader, self.weight_test_loader))):
             if y == (len(self.test_loader)): break
             
             #Test
-            te_loss, te_kl, te_eucl = test_net(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl = test_net(self.model, x_test, adj_te, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())

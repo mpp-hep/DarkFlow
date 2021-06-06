@@ -4,6 +4,7 @@ import pandas as pd
 import random
 import h5py
 import numpy as np
+import scipy.sparse as sp
 import os
 
 
@@ -214,3 +215,41 @@ def save_run_history(best_model, model, model_save_path, model_name, x_graph, tr
     # outFile.create_dataset('train_loss', data = train_y_loss, compression='gzip')
     # outFile.close()
     print('** Done **')
+
+def build_graph(x):
+    print('BUilding graph ...')
+
+    # define node features 
+    features = sp.csr_matrix(x, dtype=np.float32)
+    # define adjacency for full connected undirected graph
+    adj = np.ones((x.shape[3], x.shape[3]))
+    adj = sp.coo_matrix(adj)    # convert to sparse matrix
+
+    # build symmetric adjacency matrix
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+
+    features = normalize(features)
+    adj = normalize(adj + sp.eye(adj.shape[0]))
+
+    features = torch.FloatTensor(np.array(features.todense()))
+    adj = sparse_mx_to_torch_sparse_tensor(adj)
+
+    return features, adj
+
+def normalize(mx):
+    """Row-normalize sparse matrix"""
+    rowsum = np.array(mx.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    mx = r_mat_inv.dot(mx)
+    return mx
+
+def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a torch sparse tensor."""
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    indices = torch.from_numpy(
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+    values = torch.from_numpy(sparse_mx.data)
+    shape = torch.Size(sparse_mx.shape)
+    return torch.sparse.FloatTensor(indices, values, shape)
