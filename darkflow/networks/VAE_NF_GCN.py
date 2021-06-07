@@ -18,7 +18,7 @@ import networks.flows as flows
 
 ##################  DEFINE MODEL  #####################
 class GCNNet(nn.Module):
-    def __init__(self, args, nfeat, nhid, nclass, dropout):
+    def __init__(self, args):
         super(GCNNet, self).__init__()
 
         self.dropout = args.dropout
