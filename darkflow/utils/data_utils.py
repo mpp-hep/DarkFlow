@@ -151,37 +151,51 @@ def hf5_to_npy(file, channel):
             if d[i][j] == 'j':
                 c_j += 1
                 if ct_j < jets_per_evt:
-                    jets[i][ct_j] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 1
+                    jets[i][ct_j] = x #d[i][j+1:j+5]
                     ct_j += 1
             elif d[i][j] == 'b':
                 c_bj += 1
                 if ct_bj < obj_per_evt:
-                    bjets[i][ct_bj] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 2
+                    bjets[i][ct_bj] = x #d[i][j+1:j+5]
                     ct_bj += 1
             elif d[i][j] == 'm+':
                 c_mp += 1
                 if ct_mp < obj_per_evt:
-                    MPlus[i][ct_mp] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 3
+                    MPlus[i][ct_mp] = x #d[i][j+1:j+5]
                     ct_mp += 1
             elif d[i][j] == 'm-':
                 c_mm += 1
                 if ct_mm < obj_per_evt:
-                    MMinus[i][ct_mm] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 4
+                    MMinus[i][ct_mm] = x #d[i][j+1:j+5]
                     ct_mm += 1
             elif d[i][j] == 'e+':
                 c_ep += 1
                 if ct_ep < obj_per_evt:
-                    EPlus[i][ct_ep] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 5
+                    EPlus[i][ct_ep] = x #d[i][j+1:j+5]
                     ct_ep += 1
             elif d[i][j] == 'e-':
                 c_em += 1
                 if ct_em < obj_per_evt:
-                    EMinus[i][ct_em] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 6
+                    EMinus[i][ct_em] = x #d[i][j+1:j+5]
                     ct_em += 1
             elif d[i][j] == 'g':
                 c_g += 1
                 if ct_g < obj_per_evt:
-                    Gamma[i][ct_g] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x[5] = 7
+                    Gamma[i][ct_g] = x #d[i][j+1:j+5]
                     ct_g += 1
             else:
                 flag = 1
