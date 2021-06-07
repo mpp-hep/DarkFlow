@@ -46,7 +46,7 @@ class GCNNetRunner:
         self.network = args.network
         self.flow = args.flow 
         # print(args.flow, self.flow)
-
+        self.channel = args.channel
         if self.channel == 'chan1':
             self.num_test_ev_sm = 10000
         elif self.channel == 'chan2a':
