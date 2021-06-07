@@ -119,15 +119,15 @@ def hf5_to_npy(file, channel):
         d = np.concatenate((d,p), axis=1)
 
     jets_per_evt = 13 #13
-    obj_per_evt = 4 #4
+    obj_per_evt = 3 #3
 
-    jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
-    bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    MPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    MMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    EPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    EMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    Gamma = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    jets = np.full((d.shape[0],jets_per_evt,5), 0, dtype=float) #pad with -999 might be the error with the results
+    bjets = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    MPlus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    MMinus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    EPlus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    EMinus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    Gamma = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
     mult = np.full((d.shape[0], 7), 0, dtype=float) # count the object multiplicities per event
         
     for i in range(d.shape[0]):
@@ -152,49 +152,49 @@ def hf5_to_npy(file, channel):
                 c_j += 1
                 if ct_j < jets_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 1
+                    x = np.append(x,[1])
                     jets[i][ct_j] = x #d[i][j+1:j+5]
                     ct_j += 1
             elif d[i][j] == 'b':
                 c_bj += 1
                 if ct_bj < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 2
+                    x = np.append(x,[2])
                     bjets[i][ct_bj] = x #d[i][j+1:j+5]
                     ct_bj += 1
             elif d[i][j] == 'm+':
                 c_mp += 1
                 if ct_mp < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 3
+                    x = np.append(x,[3])
                     MPlus[i][ct_mp] = x #d[i][j+1:j+5]
                     ct_mp += 1
             elif d[i][j] == 'm-':
                 c_mm += 1
                 if ct_mm < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 4
+                    x = np.append(x,[4])
                     MMinus[i][ct_mm] = x #d[i][j+1:j+5]
                     ct_mm += 1
             elif d[i][j] == 'e+':
                 c_ep += 1
                 if ct_ep < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 5
+                    x = np.append(x,[5])
                     EPlus[i][ct_ep] = x #d[i][j+1:j+5]
                     ct_ep += 1
             elif d[i][j] == 'e-':
                 c_em += 1
                 if ct_em < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 6
+                    x = np.append(x,[6])
                     EMinus[i][ct_em] = x #d[i][j+1:j+5]
                     ct_em += 1
             elif d[i][j] == 'g':
                 c_g += 1
                 if ct_g < obj_per_evt:
                     x = d[i][j+1:j+5]
-                    x[5] = 7
+                    x = np.append(x,[7])
                     Gamma[i][ct_g] = x #d[i][j+1:j+5]
                     ct_g += 1
             else:
