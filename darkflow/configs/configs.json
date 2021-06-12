@@ -1,5 +1,5 @@
 {
- "model_name": "graph_objtypeiplicity_Chan1_BS256_15EP_%s",
+ "model_name": "GCN_Chan1_20EP_%s",
  "channel": "chan1",
  "train_net": 0,
  "test_net": 0,
@@ -10,7 +10,7 @@
  "learning_rate": 0.0001,
  "latent_dim": 15,
  "beta": 1,       
- "num_epochs": 10,
+ "num_epochs": 20,
  "dropout": 0.2,
  "data_save_path": "/home/pjawahar/Projects/DarkFlow/",
  "Data_filename": "/home/pjawahar/Projects/DarkFlow/Data/DMData/npy/background/d_chan1_32Dim_graph_objtype.npy",

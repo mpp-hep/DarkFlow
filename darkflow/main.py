@@ -32,11 +32,11 @@ def run(args):
     else:
         raise argparse.ArgumentTypeError('Network not chosen correctly. Choose if you want ConvVAE (--network convnet) or GCNVAE (--network gcnnet).')
 
-        if args.train_net:
-            network.trainer()
-            
-        if args.test_net:
-            network.tester()
+    if args.train_net:
+        network.trainer()
+        
+    if args.test_net:
+        network.tester()
     
 
 if __name__ == '__main__':

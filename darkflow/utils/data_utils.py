@@ -231,12 +231,12 @@ def save_run_history(best_model, model, model_save_path, model_name, x_graph, tr
     print('** Done **')
 
 def build_graph(x):
-    print('BUilding graph ...')
+    # print('BUilding graph ...')
 
     # define node features 
-    features = sp.csr_matrix(x, dtype=np.float32)
+    features = sp.csr_matrix(x[0,0], dtype=np.float32)
     # define adjacency for full connected undirected graph
-    adj = np.ones((x.shape[3], x.shape[3]))
+    adj = np.ones((x.shape[2], x.shape[2]))
     adj = sp.coo_matrix(adj)    # convert to sparse matrix
 
     # build symmetric adjacency matrix
@@ -253,8 +253,10 @@ def build_graph(x):
 def normalize(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))
-    r_inv = np.power(rowsum, -1).flatten()
+    with np.errstate(divide='ignore'):
+        r_inv = np.power(rowsum, -1).flatten()
     r_inv[np.isinf(r_inv)] = 0.
+    r_inv[np.isnan(r_inv)] = 0.
     r_mat_inv = sp.diags(r_inv)
     mx = r_mat_inv.dot(mx)
     return mx

@@ -143,9 +143,9 @@ class ConvNetRunner:
 
         # Set aside bkg samples to form test set
         # num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2b | 5868 for chan2a
-        self.d_test = d[:num_test_ev_sm,:,:,:]
-        self.Met_sm = Met[:num_test_ev_sm,:] 
-        self.weight_sm = weight[:num_test_ev_sm]
+        self.d_test = d[:self.num_test_ev_sm,:,:,:]
+        self.Met_sm = Met[:self.num_test_ev_sm,:] 
+        self.weight_sm = weight[:self.num_test_ev_sm]
 
         # Build test set
         self.x_test = np.append(self.d_test, d_bsm, axis=0)
@@ -153,9 +153,9 @@ class ConvNetRunner:
         self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
         
         # Remaining data for train and val
-        self.d = d[(num_test_ev_sm+1):,:,:,:]
-        self.Met_d = Met[(num_test_ev_sm+1):,:] 
-        self.weight = weight[(num_test_ev_sm+1):]
+        self.d = d[(self.num_test_ev_sm+1):,:,:,:]
+        self.Met_d = Met[(self.num_test_ev_sm+1):,:] 
+        self.weight = weight[(self.num_test_ev_sm+1):]
 
         # save the scalers
         # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))

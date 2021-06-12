@@ -34,17 +34,17 @@ class GCNNet(nn.Module):
         self.q_z_output_dim = args.q_z_output_dim
         self.z_size = self.latent_dim
 
-        self.gc1 = GraphConvolution(32, 16)
-        self.gc2 = GraphConvolution(16, 8)
+        self.gc1 = GraphConvolution(5, 8)
+        self.gc2 = GraphConvolution(8, 2)
 
-        self.dense1 = nn.Linear(216,self.q_z_output_dim)
+        self.dense1 = nn.Linear(62,self.q_z_output_dim)
         self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
         self.q_z_logvar = nn.Linear(self.q_z_output_dim, self.latent_dim)
         self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
-        self.dense4 = nn.Linear(self.q_z_output_dim, 216)
+        self.dense4 = nn.Linear(self.q_z_output_dim, 62)
 
-        self.gc3 = GraphConvolution(8, 16)
-        self.gc4 = GraphConvolution(16, 32)
+        self.gc3 = GraphConvolution(2, 8)
+        self.gc4 = GraphConvolution(8, 5)
 
         self.ldj = 0        
 
@@ -58,16 +58,16 @@ class GCNNet(nn.Module):
         out = F.relu(self.dense1(out))
         # dense layer 2
         mean = self.q_z_mean(out)
-        logvar = self.q_z_logvar(out)
+        logvar = F.hardtanh(self.q_z_logvar(out), min_val=-3, max_val=3)
         return mean, logvar
 
     def decode(self, z, adj):
         # dense layer 3
-        out = F.relu(self.dense1(z))
+        out = F.relu(self.dense3(z))
         # dense layer 4
-        out = F.relu(self.dense1(out))
+        out = F.relu(self.dense4(out))
         # reshape
-        out = out.view(out.size(0), 8, 20, 1) #20-full(13+3), 5-4LJ, 26-full(13+4)
+        out = out.view(31, 2) #20-full(13+3), 5-4LJ, 26-full(13+4)
         # reconstruct
         out = F.relu(self.gc3(out, adj))
         out = F.relu(self.gc4(out, adj))
@@ -78,10 +78,10 @@ class GCNNet(nn.Module):
         return z
 
     def forward(self, x, adj):
-        self.met = y
-        mean, logvar = self.encode(x, self.met)
+        
+        mean, logvar = self.encode(x, adj)
         z = self.reparameterize(mean, logvar)
-        out = self.decode(z)
+        out = self.decode(z, adj)
         
         return out, mean, logvar, self.ldj, z, z
 
