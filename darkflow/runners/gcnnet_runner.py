@@ -10,17 +10,18 @@ import torchvision.transforms as transforms
 import torchvision.datasets
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
+import scipy.sparse as sp
 from pickle import dump
 import numpy as np
 import h5py
 from tqdm import tqdm
 
-from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history
-from darkflow.utils.network_utils import compute_loss, train_net, test_net
-import darkflow.networks.VAE_NF_Conv2D as VAE
+from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history, build_graph
+from darkflow.utils.network_utils import train_gcnnet, test_gcnnet
+import darkflow.networks.VAE_NF_GCN as VAE
 
 
-class ConvNetRunner:
+class GCNNetRunner:
     def __init__(self, args):
 
         # Hyperparameters
@@ -44,9 +45,8 @@ class ConvNetRunner:
 
         self.network = args.network
         self.flow = args.flow 
-        self.channel = args.channel
         # print(args.flow, self.flow)
-
+        self.channel = args.channel
         if self.channel == 'chan1':
             self.num_test_ev_sm = 10000
         elif self.channel == 'chan2a':
@@ -57,7 +57,7 @@ class ConvNetRunner:
             self.num_test_ev_sm = 1025333
 
         if self.flow == 'noflow':
-            self.model = VAE.ConvNet(args)
+            self.model = VAE.GCNNet(args)
             self.flow_ID = 'NoF'
         elif self.flow == 'planar':
             self.model = VAE.PlanarVAE(args)
@@ -86,7 +86,7 @@ class ConvNetRunner:
 
         self.preprocess_data()
 
-    def preprocess_data_withMult(self):
+    def preprocess_data(self):
         #Read data
         d = read_npy(self.Data_filename)
         d_bsm = read_npy(self.Data_bsm_filename)
@@ -94,16 +94,14 @@ class ConvNetRunner:
         met_bsm = read_npy(self.Met_bsm_filename)
 
         print('Starting to process data ...')
-        weight = met[:,-1]
+        weight = met[:,8] #met file conatins [met, multiplicites, weight]
         Met =  met[:,0]
-        mult = met[:,1:-1] # event object pultiplicities
         weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
         Met_bsm =  met_bsm[:,0]
-        mult_bsm = met_bsm[:,1:-1]
 
         # suffle data
-        d, weight, Met, mult = shuffle(d, weight, Met, mult, random_state=0)
-        d_bsm, weight_bsm, Met_bsm, mult_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, mult_bsm, random_state=0)
+        d, weight, Met = shuffle(d, weight, Met, random_state=0)
+        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
         # standardize particle inputs
         scaler_p = StandardScaler()
@@ -120,47 +118,44 @@ class ConvNetRunner:
         d_bsm = scaler_b.transform(d_bsm)
         d_bsm = np.reshape(d_bsm, d_bsm_shape)
 
-        # standardize met inputs
-        Met = np.reshape(Met, (Met.shape[0],1))
-        scaler_met = StandardScaler()
-        scaler_met.fit(Met)
-        Met = scaler_met.transform(Met)
+        # # standardize met inputs
+        # Met = np.reshape(Met, (Met.shape[0],1))
+        # scaler_met = StandardScaler()
+        # scaler_met.fit(Met)
+        # Met = scaler_met.transform(Met)
 
-        Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
-        scaler_mb = StandardScaler()
-        scaler_mb.fit(Met_bsm)
-        Met_bsm = scaler_mb.transform(Met_bsm)
+        # Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
+        # scaler_mb = StandardScaler()
+        # scaler_mb.fit(Met_bsm)
+        # Met_bsm = scaler_mb.transform(Met_bsm)
 
-        # manage Met shapes to concatenate with d
-        met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
-        met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
-        paddedMet = np.concatenate((Met,met_pad), axis=1)
-        paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
+        # # manage Met shapes to concatenate with d
+        # met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
+        # met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
+        # paddedMet = np.concatenate((Met,met_pad), axis=1)
+        # paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
 
-        # concatenate d and Met
-        paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
-        paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
-        d = np.concatenate((d,paddedMet), axis=2)
-        d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
-
-        # concatenate multiplicities back to Met
-        Met = np.concatenate((Met, mult), axis=1)
-        Met_bsm = np.concatenate((Met_bsm, mult_bsm), axis=1)
+        # # concatenate d and Met
+        # paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
+        # paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
+        # d = np.concatenate((d,paddedMet), axis=2)
+        # d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
 
         # Set aside bkg samples to form test set
-        num_test_ev_sm = self.num_test_ev_sm     
+        # num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2b | 5868 for chan2a
+        num_test_ev_sm = self.num_test_ev_sm
         self.d_test = d[:num_test_ev_sm,:,:,:]
-        self.Met_sm = Met[:num_test_ev_sm,:] 
+        # self.Met_sm = Met[:num_test_ev_sm,:] 
         self.weight_sm = weight[:num_test_ev_sm]
 
         # Build test set
         self.x_test = np.append(self.d_test, d_bsm, axis=0)
-        self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
+        # self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
         self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
         
         # Remaining data for train and val
         self.d = d[(num_test_ev_sm+1):,:,:,:]
-        self.Met_d = Met[(num_test_ev_sm+1):,:] 
+        # self.Met_d = Met[(num_test_ev_sm+1):,:] 
         self.weight = weight[(num_test_ev_sm+1):]
 
         # save the scalers
@@ -171,25 +166,133 @@ class ConvNetRunner:
         i_train = int(self.d.shape[0]*self.training_fraction)
         # training data
         self.x_train = self.d[:i_train,:,:,:]
-        self.met_train = self.Met_d[:i_train,:] 
+        # self.met_train = self.Met_d[:i_train,:] 
         self.weight_train = self.weight[:i_train]
         
         # Val data
         self.x_val = self.d[i_train:,:,:,:]
-        self.met_val = self.Met_d[i_train:,:]
+        # self.met_val = self.Met_d[i_train:,:]
         self.weight_val = self.weight[i_train:]
+
+
+        #########################Debugging##########################
+
+        # self.x_train = self.x_train[:10]
+        # self.x_val = self.x_val[:10]
+        # self.x_test = self.x_test[:10]
+
+        # self.weight_train = self.weight_train[:10]
+        # self.weight_val = self.weight_val[:10]
+        # self.weight_test = self.weight_test[:10]
+        #########################Debugging##########################
+        print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape) #, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
+
+
+    # def preprocess_data_withMult(self):
+    #     #Read data
+    #     d = read_npy(self.Data_filename)
+    #     d_bsm = read_npy(self.Data_bsm_filename)
+    #     met = read_npy(self.Met_filename)
+    #     met_bsm = read_npy(self.Met_bsm_filename)
+
+    #     print('Starting to process data ...')
+    #     weight = met[:,-1]
+    #     Met =  met[:,0]
+    #     mult = met[:,1:-1] # event object pultiplicities
+    #     weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
+    #     Met_bsm =  met_bsm[:,0]
+    #     mult_bsm = met_bsm[:,1:-1]
+
+    #     # suffle data
+    #     d, weight, Met, mult = shuffle(d, weight, Met, mult, random_state=0)
+    #     d_bsm, weight_bsm, Met_bsm, mult_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, mult_bsm, random_state=0)
+
+    #     # standardize particle inputs
+    #     scaler_p = StandardScaler()
+    #     d_shape = d.shape
+    #     d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[3]))
+    #     scaler_p.fit(d)
+    #     d = scaler_p.transform(d)
+    #     d = np.reshape(d, d_shape)
+
+    #     scaler_b = StandardScaler()
+    #     d_bsm_shape = d_bsm.shape
+    #     d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
+    #     scaler_b.fit(d_bsm)
+    #     d_bsm = scaler_b.transform(d_bsm)
+    #     d_bsm = np.reshape(d_bsm, d_bsm_shape)
+
+    #     # standardize met inputs
+    #     Met = np.reshape(Met, (Met.shape[0],1))
+    #     scaler_met = StandardScaler()
+    #     scaler_met.fit(Met)
+    #     Met = scaler_met.transform(Met)
+
+    #     Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
+    #     scaler_mb = StandardScaler()
+    #     scaler_mb.fit(Met_bsm)
+    #     Met_bsm = scaler_mb.transform(Met_bsm)
+
+    #     # manage Met shapes to concatenate with d
+    #     met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
+    #     met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
+    #     paddedMet = np.concatenate((Met,met_pad), axis=1)
+    #     paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
+
+    #     # concatenate d and Met
+    #     paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
+    #     paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
+    #     d = np.concatenate((d,paddedMet), axis=2)
+    #     d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
+
+    #     # concatenate multiplicities back to Met
+    #     Met = np.concatenate((Met, mult), axis=1)
+    #     Met_bsm = np.concatenate((Met_bsm, mult_bsm), axis=1)
+
+    #     # Set aside bkg samples to form test set
+    #     num_test_ev_sm = self.num_test_ev_sm     
+    #     self.d_test = d[:num_test_ev_sm,:,:,:]
+    #     self.Met_sm = Met[:num_test_ev_sm,:] 
+    #     self.weight_sm = weight[:num_test_ev_sm]
+
+    #     # Build test set
+    #     self.x_test = np.append(self.d_test, d_bsm, axis=0)
+    #     self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
+    #     self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
         
-        print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
+    #     # Remaining data for train and val
+    #     self.d = d[(num_test_ev_sm+1):,:,:,:]
+    #     self.Met_d = Met[(num_test_ev_sm+1):,:] 
+    #     self.weight = weight[(num_test_ev_sm+1):]
+
+    #     # save the scalers
+    #     # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
+    #     # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))
+
+    #     # build train and val sets
+    #     i_train = int(self.d.shape[0]*self.training_fraction)
+    #     # training data
+    #     self.x_train = self.d[:i_train,:,:,:]
+    #     self.met_train = self.Met_d[:i_train,:] 
+    #     self.weight_train = self.weight[:i_train]
+        
+    #     # Val data
+    #     self.x_val = self.d[i_train:,:,:,:]
+    #     self.met_val = self.Met_d[i_train:,:]
+    #     self.weight_val = self.weight[i_train:]
+        
+    #     print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
         
 
     def trainer(self):
-        self.train_loader = DataLoader(dataset = self.x_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.metTr_loader = DataLoader(dataset = self.met_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.batch_size, shuffle=False, drop_last=True)
+        # torch.autograd.set_detect_anomaly(True)
+        self.train_loader = DataLoader(dataset = self.x_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        # self.adjTr_loader = DataLoader(dataset = self.adj_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
-        self.val_loader = DataLoader(dataset = self.x_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.metVa_loader = DataLoader(dataset = self.met_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
-        self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.batch_size, shuffle=False, drop_last=True)
+        self.val_loader = DataLoader(dataset = self.x_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        # self.adjVa_loader = DataLoader(dataset = self.adj_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
         # to store training history
         self.x_graph = []
@@ -199,6 +302,8 @@ class ConvNetRunner:
         self.val_y_rec = []
         self.val_y_kl = []
         self.val_y_loss = []
+        self.inx = []
+        self.ox_decoded = []
 
         # print('Model Parameter: ', self.model)
         print('Model Type: %s'%self.flow_ID)
@@ -211,14 +316,21 @@ class ConvNetRunner:
             tr_loss_aux = 0.0
             tr_kl_aux = 0.0
             tr_rec_aux = 0.0
-            for y, (x_train, met_tr, wt_train) in tqdm(enumerate(zip(self.train_loader, self.metTr_loader, self.weight_train_loader))):
+            for y, (x_train, wt_train) in tqdm(enumerate(zip(self.train_loader, self.weight_train_loader))):
                 if y == (len(self.train_loader)): break
 
-                tr_loss, tr_kl, tr_eucl, self.model = train_net(self.model, x_train, met_tr, wt_train, self.optimizer, batch_size=self.batch_size)
+                # build the graphs
+                features_train, adj_train = build_graph(x_train)
+
+                # train
+                tr_loss, tr_kl, tr_eucl, self.model, ti, tod = train_gcnnet(self.model, features_train, adj_train, wt_train, self.optimizer, batch_size=self.test_batch_size)
                 
                 tr_loss_aux += tr_loss
                 tr_kl_aux += tr_kl
                 tr_rec_aux += tr_eucl
+
+                # self.inx.append(ti.cpu().detach().numpy())
+                # self.ox_decoded.append(tod.cpu().detach().numpy())
 
             print('Moving to validation stage ...')
             # validation
@@ -226,11 +338,14 @@ class ConvNetRunner:
             val_kl_aux = 0.0
             val_rec_aux = 0.0
 
-            for y, (x_val, met_va, wt_val) in tqdm(enumerate(zip(self.val_loader, self.metVa_loader, self.weight_val_loader))):
+            for y, (x_val, wt_val) in tqdm(enumerate(zip(self.val_loader, self.weight_val_loader))):
                 if y == (len(self.val_loader)): break
                 
-                #Test
-                val_loss, val_kl, val_eucl = test_net(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
+                # build the graphs
+                features_val, adj_val = build_graph(x_val)
+                
+                # validate
+                val_loss, val_kl, val_eucl = test_gcnnet(self.model, features_val, adj_val, wt_val, batch_size=self.test_batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -243,6 +358,7 @@ class ConvNetRunner:
             self.val_y_loss.append(val_loss_aux/(len(self.val_loader)))
             self.val_y_kl.append(val_kl_aux/(len(self.val_loader)))
             self.val_y_rec.append(val_rec_aux/(len(self.val_loader)))
+
                 
             print('Epoch: {} -- Train loss: {}  -- Val loss: {}'.format(epoch, 
                                                                          tr_loss_aux/(len(self.train_loader)), 
@@ -259,6 +375,8 @@ class ConvNetRunner:
         # Save the model
         save_run_history(self.best_model, self.model, self.model_save_path, self.model_name, 
                             self.x_graph, self.train_y_rec, self.train_y_kl, self.train_y_loss, hist_name='TrainHistory')
+        # save_npy(np.array(self.inx), self.test_data_save_path + '%s_x.npy' %self.model_name)
+        # save_npy(np.array(self.ox_decoded), self.test_data_save_path + '%s_x_decoded.npy' %self.model_name)
         # save_run_history(self.best_model, self.model, self.model_save_path, self.model_name, 
                             # self.x_graph, self.val_y_rec, self.val_y_kl, self.val_y_loss, hist_name='ValHistory')
 
@@ -273,26 +391,32 @@ class ConvNetRunner:
 
         # load data
         self.test_loader = DataLoader(dataset=self.x_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
-        self.metTe_loader = DataLoader(dataset=self.met_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
+        # self.adjTe_loader = DataLoader(dataset=self.adj_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
         self.weight_test_loader = DataLoader(dataset=self.weight_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
 
         print('Starting the Testing Process ...')
         self.test_ev_rec = []
         self.test_ev_kl = []
         self.test_ev_loss = []
-        for y, (x_test, met_te, wt_test) in tqdm(enumerate(zip(self.test_loader, self.metTe_loader, self.weight_test_loader))):
+        
+        for y, (x_test, wt_test) in tqdm(enumerate(zip(self.test_loader, self.weight_test_loader))):
             if y == (len(self.test_loader)): break
+
+            # build graph
+            features_test, adj_test = build_graph(x_test)
             
             #Test
-            te_loss, te_kl, te_eucl = test_net(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl = test_gcnnet(self.model, features_test, adj_test, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
             self.test_ev_rec.append(te_eucl.cpu().detach().numpy())
+            
         # print('loss: ', test_ev_loss)
         save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
         save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
         save_npy(np.array(self.test_ev_rec), self.test_data_save_path + '%s_rec.npy' %self.model_name)
+        
         # save_csv(data= np.array(self.test_ev_kl), filename= self.test_data_save_path + 'rec_%s.csv' %self.model_name)
         # save_csv(data= np.array(self.test_ev_rec), filename= self.test_data_save_path + 'rec1_%s.csv' %self.model_name)
 

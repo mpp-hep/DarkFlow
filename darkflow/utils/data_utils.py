@@ -4,6 +4,7 @@ import pandas as pd
 import random
 import h5py
 import numpy as np
+import scipy.sparse as sp
 import os
 
 
@@ -118,15 +119,15 @@ def hf5_to_npy(file, channel):
         d = np.concatenate((d,p), axis=1)
 
     jets_per_evt = 13 #13
-    obj_per_evt = 4 #4
+    obj_per_evt = 3 #3
 
-    jets = np.full((d.shape[0],jets_per_evt,4), 0, dtype=float) #pad with -999 might be the error with the results
-    bjets = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    MPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    MMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    EPlus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    EMinus = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
-    Gamma = np.full((d.shape[0],obj_per_evt,4), 0, dtype=float)
+    jets = np.full((d.shape[0],jets_per_evt,5), 0, dtype=float) #pad with -999 might be the error with the results
+    bjets = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    MPlus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    MMinus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    EPlus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    EMinus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
+    Gamma = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
     mult = np.full((d.shape[0], 7), 0, dtype=float) # count the object multiplicities per event
         
     for i in range(d.shape[0]):
@@ -150,37 +151,51 @@ def hf5_to_npy(file, channel):
             if d[i][j] == 'j':
                 c_j += 1
                 if ct_j < jets_per_evt:
-                    jets[i][ct_j] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[1])
+                    jets[i][ct_j] = x #d[i][j+1:j+5]
                     ct_j += 1
             elif d[i][j] == 'b':
                 c_bj += 1
                 if ct_bj < obj_per_evt:
-                    bjets[i][ct_bj] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[2])
+                    bjets[i][ct_bj] = x #d[i][j+1:j+5]
                     ct_bj += 1
             elif d[i][j] == 'm+':
                 c_mp += 1
                 if ct_mp < obj_per_evt:
-                    MPlus[i][ct_mp] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[3])
+                    MPlus[i][ct_mp] = x #d[i][j+1:j+5]
                     ct_mp += 1
             elif d[i][j] == 'm-':
                 c_mm += 1
                 if ct_mm < obj_per_evt:
-                    MMinus[i][ct_mm] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[4])
+                    MMinus[i][ct_mm] = x #d[i][j+1:j+5]
                     ct_mm += 1
             elif d[i][j] == 'e+':
                 c_ep += 1
                 if ct_ep < obj_per_evt:
-                    EPlus[i][ct_ep] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[5])
+                    EPlus[i][ct_ep] = x #d[i][j+1:j+5]
                     ct_ep += 1
             elif d[i][j] == 'e-':
                 c_em += 1
                 if ct_em < obj_per_evt:
-                    EMinus[i][ct_em] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[6])
+                    EMinus[i][ct_em] = x #d[i][j+1:j+5]
                     ct_em += 1
             elif d[i][j] == 'g':
                 c_g += 1
                 if ct_g < obj_per_evt:
-                    Gamma[i][ct_g] = d[i][j+1:j+5]
+                    x = d[i][j+1:j+5]
+                    x = np.append(x,[7])
+                    Gamma[i][ct_g] = x #d[i][j+1:j+5]
                     ct_g += 1
             else:
                 flag = 1
@@ -214,3 +229,43 @@ def save_run_history(best_model, model, model_save_path, model_name, x_graph, tr
     # outFile.create_dataset('train_loss', data = train_y_loss, compression='gzip')
     # outFile.close()
     print('** Done **')
+
+def build_graph(x):
+    # print('BUilding graph ...')
+
+    # define node features 
+    features = sp.csr_matrix(x[0,0], dtype=np.float32)
+    # define adjacency for full connected undirected graph
+    adj = np.ones((x.shape[2], x.shape[2]))
+    adj = sp.coo_matrix(adj)    # convert to sparse matrix
+
+    # build symmetric adjacency matrix
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+
+    features = normalize(features)
+    adj = normalize(adj + sp.eye(adj.shape[0]))
+
+    features = torch.FloatTensor(np.array(features.todense()))
+    adj = sparse_mx_to_torch_sparse_tensor(adj)
+
+    return features, adj
+
+def normalize(mx):
+    """Row-normalize sparse matrix"""
+    rowsum = np.array(mx.sum(1))
+    with np.errstate(divide='ignore'):
+        r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_inv[np.isnan(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    mx = r_mat_inv.dot(mx)
+    return mx
+
+def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a torch sparse tensor."""
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    indices = torch.from_numpy(
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+    values = torch.from_numpy(sparse_mx.data)
+    shape = torch.Size(sparse_mx.shape)
+    return torch.sparse.FloatTensor(indices, values, shape)
