@@ -42,16 +42,16 @@ class ConvNet(nn.Module):
                   nn.ReLU()
                   ) 
             #
-            self.mult_bn1 = nn.BatchNorm1d(216) 
-            self.dense1 = nn.Linear(216,self.q_z_output_dim) #161 - full(13+3)+met, 41-4LJ, 216 - full(13+4)+met+mult
+            self.mult_bn1 = nn.BatchNorm1d(161) 
+            self.dense1 = nn.Linear(161,self.q_z_output_dim) #161 - full(13+3)+met, 41-4LJ, 216 - full(13+4)+met+mult
             self.dnn_bn1 = nn.BatchNorm1d(self.q_z_output_dim)
             self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
             self.q_z_logvar = nn.Linear(self.q_z_output_dim, self.latent_dim)
             #
             self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
             self.dnn_bn3 = nn.BatchNorm1d(self.q_z_output_dim)
-            self.dense4 = nn.Linear(self.q_z_output_dim, 216)
-            self.dnn_bn4 = nn.BatchNorm1d(216)
+            self.dense4 = nn.Linear(self.q_z_output_dim, 161)
+            self.dnn_bn4 = nn.BatchNorm1d(161)
             #
             self.p_x_nn = nn.Sequential(
                   nn.ConvTranspose2d(8, 16, kernel_size=(7,1), stride=(1), padding=(0)),
@@ -94,7 +94,7 @@ class ConvNet(nn.Module):
             # remove met and multiplicities (if mult -8)
             out = out[:,:-1]
             # reshape
-            out = out.view(out.size(0), 8, 26, 1) #20-full(13+3), 5-4LJ, 26-full(13+4)
+            out = out.view(out.size(0), 8, 20, 1) #20-full(13+3), 5-4LJ, 26-full(13+4)
             # DeConv
             out = self.p_x_nn(out)
             
@@ -105,8 +105,7 @@ class ConvNet(nn.Module):
             return z
     
         def forward(self, x, y):
-            self.met = y
-            mean, logvar = self.encode(x, self.met)
+            mean, logvar = self.encode(x, y)
             z = self.reparameterize(mean, logvar)
             out = self.decode(z)
             return out, mean, logvar, self.ldj, z, z

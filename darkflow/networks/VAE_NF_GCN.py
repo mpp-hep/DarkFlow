@@ -34,8 +34,8 @@ class GCNNet(nn.Module):
         self.q_z_output_dim = args.q_z_output_dim
         self.z_size = self.latent_dim
 
-        self.gc1 = GraphConvolution(5, 8)
-        self.gc2 = GraphConvolution(8, 2)
+        self.gc1 = GraphConvolution(5, 3)
+        self.gc2 = GraphConvolution(3, 2)
 
         self.dense1 = nn.Linear(62,self.q_z_output_dim)
         self.q_z_mean = nn.Linear(self.q_z_output_dim, self.latent_dim)
@@ -43,8 +43,8 @@ class GCNNet(nn.Module):
         self.dense3 = nn.Linear(self.latent_dim, self.q_z_output_dim)
         self.dense4 = nn.Linear(self.q_z_output_dim, 62)
 
-        self.gc3 = GraphConvolution(2, 8)
-        self.gc4 = GraphConvolution(8, 5)
+        self.gc3 = GraphConvolution(2, 3)
+        self.gc4 = GraphConvolution(3, 5)
 
         self.ldj = 0        
 
@@ -58,7 +58,7 @@ class GCNNet(nn.Module):
         out = F.relu(self.dense1(out))
         # dense layer 2
         mean = self.q_z_mean(out)
-        logvar = F.hardtanh(self.q_z_logvar(out), min_val=-3, max_val=3)
+        logvar = F.hardtanh(self.q_z_logvar(out), min_val=-5, max_val=5)
         return mean, logvar
 
     def decode(self, z, adj):

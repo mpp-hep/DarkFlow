@@ -16,7 +16,7 @@ import h5py
 from tqdm import tqdm
 
 from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history
-from darkflow.utils.network_utils import compute_loss, train_net, test_net
+from darkflow.utils.network_utils import train_convnet, test_convnet
 import darkflow.networks.VAE_NF_Conv2D as VAE
 
 
@@ -45,7 +45,6 @@ class ConvNetRunner:
         self.network = args.network
         self.flow = args.flow 
         # print(args.flow, self.flow)
-
         self.channel = args.channel
         if self.channel == 'chan1':
             self.num_test_ev_sm = 10000
@@ -304,7 +303,7 @@ class ConvNetRunner:
             for y, (x_train, met_tr, wt_train) in tqdm(enumerate(zip(self.train_loader, self.metTr_loader, self.weight_train_loader))):
                 if y == (len(self.train_loader)): break
 
-                tr_loss, tr_kl, tr_eucl, self.model = train_net(self.model, x_train, met_tr, wt_train, self.optimizer, batch_size=self.batch_size)
+                tr_loss, tr_kl, tr_eucl, self.model = train_convnet(self.model, x_train, met_tr, wt_train, self.optimizer, batch_size=self.batch_size)
                 
                 tr_loss_aux += tr_loss
                 tr_kl_aux += tr_kl
@@ -320,7 +319,7 @@ class ConvNetRunner:
                 if y == (len(self.val_loader)): break
                 
                 #Test
-                val_loss, val_kl, val_eucl = test_net(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
+                val_loss, val_kl, val_eucl = test_convnet(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -374,7 +373,7 @@ class ConvNetRunner:
             if y == (len(self.test_loader)): break
             
             #Test
-            te_loss, te_kl, te_eucl = test_net(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl = test_convnet(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())

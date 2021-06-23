@@ -17,7 +17,7 @@ import h5py
 from tqdm import tqdm
 
 from darkflow.utils.data_utils import save_npy, save_csv, read_npy, save_run_history, build_graph
-from darkflow.utils.network_utils import compute_loss, train_net, test_net
+from darkflow.utils.network_utils import train_gcnnet, test_gcnnet
 import darkflow.networks.VAE_NF_GCN as VAE
 
 
@@ -322,23 +322,15 @@ class GCNNetRunner:
                 # build the graphs
                 features_train, adj_train = build_graph(x_train)
 
-                # fff = features_train.cpu().detach().numpy()
-                # aaa = adj_train.to_dense().cpu().detach().numpy()
-
-                # if np.isnan(fff.any()):
-                #     print('pos: ', y, 'fff')
-                # elif np.isnan(aaa.any()):
-                #     print('pos: ', y, 'aaa')
-
                 # train
-                tr_loss, tr_kl, tr_eucl, self.model, ti, tod = train_net(self.model, features_train, adj_train, wt_train, self.optimizer, batch_size=self.test_batch_size)
+                tr_loss, tr_kl, tr_eucl, self.model, ti, tod = train_gcnnet(self.model, features_train, adj_train, wt_train, self.optimizer, batch_size=self.test_batch_size)
                 
                 tr_loss_aux += tr_loss
                 tr_kl_aux += tr_kl
                 tr_rec_aux += tr_eucl
 
-                self.inx.append(ti.cpu().detach().numpy())
-                self.ox_decoded.append(tod.cpu().detach().numpy())
+                # self.inx.append(ti.cpu().detach().numpy())
+                # self.ox_decoded.append(tod.cpu().detach().numpy())
 
             print('Moving to validation stage ...')
             # validation
@@ -353,7 +345,7 @@ class GCNNetRunner:
                 features_val, adj_val = build_graph(x_val)
                 
                 # validate
-                val_loss, val_kl, val_eucl = test_net(self.model, features_val, adj_val, wt_val, batch_size=self.test_batch_size)
+                val_loss, val_kl, val_eucl = test_gcnnet(self.model, features_val, adj_val, wt_val, batch_size=self.test_batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -414,7 +406,7 @@ class GCNNetRunner:
             features_test, adj_test = build_graph(x_test)
             
             #Test
-            te_loss, te_kl, te_eucl = test_net(self.model, features_test, adj_test, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl = test_gcnnet(self.model, features_test, adj_test, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
