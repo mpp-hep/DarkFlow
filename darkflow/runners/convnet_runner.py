@@ -175,7 +175,7 @@ class ConvNetRunner:
         print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
 
 
-    def preprocess_data_withMult(self):
+    def preprocess_data_withMultiplicities(self):
         #Read data
         d = read_npy(self.Data_filename)
         d_bsm = read_npy(self.Data_bsm_filename)

@@ -94,7 +94,7 @@ class GCNNetRunner:
         met_bsm = read_npy(self.Met_bsm_filename)
 
         print('Starting to process data ...')
-        weight = met[:,8] #met file conatins [met, multiplicites, weight]
+        weight = met[:,3] # met file conatins [met, HT, mEff, weight, multiplicites]
         Met =  met[:,0]
         weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
         Met_bsm =  met_bsm[:,0]
@@ -129,18 +129,6 @@ class GCNNetRunner:
         # scaler_mb.fit(Met_bsm)
         # Met_bsm = scaler_mb.transform(Met_bsm)
 
-        # # manage Met shapes to concatenate with d
-        # met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
-        # met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
-        # paddedMet = np.concatenate((Met,met_pad), axis=1)
-        # paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
-
-        # # concatenate d and Met
-        # paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
-        # paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
-        # d = np.concatenate((d,paddedMet), axis=2)
-        # d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
-
         # Set aside bkg samples to form test set
         # num_test_ev_sm = 1025333     #1025333 for chan3 | 10000 for chan1 | 89000 for chan2b | 5868 for chan2a
         num_test_ev_sm = self.num_test_ev_sm
@@ -174,124 +162,95 @@ class GCNNetRunner:
         # self.met_val = self.Met_d[i_train:,:]
         self.weight_val = self.weight[i_train:]
 
-
-        #########################Debugging##########################
-
-        # self.x_train = self.x_train[:10]
-        # self.x_val = self.x_val[:10]
-        # self.x_test = self.x_test[:10]
-
-        # self.weight_train = self.weight_train[:10]
-        # self.weight_val = self.weight_val[:10]
-        # self.weight_test = self.weight_test[:10]
-        #########################Debugging##########################
         print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape) #, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
 
 
-    # def preprocess_data_withMult(self):
-    #     #Read data
-    #     d = read_npy(self.Data_filename)
-    #     d_bsm = read_npy(self.Data_bsm_filename)
-    #     met = read_npy(self.Met_filename)
-    #     met_bsm = read_npy(self.Met_bsm_filename)
+    def preprocess_data_witHLF(self):
+        #Read data
+        d = read_npy(self.Data_filename)
+        d_bsm = read_npy(self.Data_bsm_filename)
+        met = read_npy(self.Met_filename)
+        met_bsm = read_npy(self.Met_bsm_filename)
 
-    #     print('Starting to process data ...')
-    #     weight = met[:,-1]
-    #     Met =  met[:,0]
-    #     mult = met[:,1:-1] # event object pultiplicities
-    #     weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
-    #     Met_bsm =  met_bsm[:,0]
-    #     mult_bsm = met_bsm[:,1:-1]
+        print('Starting to process data ...')
+        weight = met[:,3] # met file conatins [met, HT, mEff, weight, multiplicites]
+        Met =  met[:,0]
+        weight_bsm = np.ones(d_bsm.shape[0])#met_bsm[:,1]
+        Met_bsm =  met_bsm[:,0]
 
-    #     # suffle data
-    #     d, weight, Met, mult = shuffle(d, weight, Met, mult, random_state=0)
-    #     d_bsm, weight_bsm, Met_bsm, mult_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, mult_bsm, random_state=0)
+        # suffle data
+        d, weight, Met = shuffle(d, weight, Met, random_state=0)
+        d_bsm, weight_bsm, Met_bsm = shuffle(d_bsm, weight_bsm, Met_bsm, random_state=0)
 
-    #     # standardize particle inputs
-    #     scaler_p = StandardScaler()
-    #     d_shape = d.shape
-    #     d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[3]))
-    #     scaler_p.fit(d)
-    #     d = scaler_p.transform(d)
-    #     d = np.reshape(d, d_shape)
+        # standardize particle inputs
+        scaler_p = StandardScaler()
+        d_shape = d.shape
+        d = np.reshape(d, (d_shape[0], d_shape[2]*d_shape[3]))
+        scaler_p.fit(d)
+        d = scaler_p.transform(d)
+        d = np.reshape(d, d_shape)
 
-    #     scaler_b = StandardScaler()
-    #     d_bsm_shape = d_bsm.shape
-    #     d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
-    #     scaler_b.fit(d_bsm)
-    #     d_bsm = scaler_b.transform(d_bsm)
-    #     d_bsm = np.reshape(d_bsm, d_bsm_shape)
+        scaler_b = StandardScaler()
+        d_bsm_shape = d_bsm.shape
+        d_bsm = np.reshape(d_bsm, (d_bsm_shape[0], d_bsm_shape[2]*d_bsm_shape[3]))
+        scaler_b.fit(d_bsm)
+        d_bsm = scaler_b.transform(d_bsm)
+        d_bsm = np.reshape(d_bsm, d_bsm_shape)
 
-    #     # standardize met inputs
-    #     Met = np.reshape(Met, (Met.shape[0],1))
-    #     scaler_met = StandardScaler()
-    #     scaler_met.fit(Met)
-    #     Met = scaler_met.transform(Met)
+        # standardize met inputs
+        Met = np.reshape(Met, (Met.shape[0],1))
+        scaler_met = StandardScaler()
+        scaler_met.fit(Met)
+        Met = scaler_met.transform(Met)
 
-    #     Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
-    #     scaler_mb = StandardScaler()
-    #     scaler_mb.fit(Met_bsm)
-    #     Met_bsm = scaler_mb.transform(Met_bsm)
+        Met_bsm = np.reshape(Met_bsm, (Met_bsm.shape[0],1))
+        scaler_mb = StandardScaler()
+        scaler_mb.fit(Met_bsm)
+        Met_bsm = scaler_mb.transform(Met_bsm)
 
-    #     # manage Met shapes to concatenate with d
-    #     met_pad = np.full((Met.shape[0],3), 0, dtype=float) 
-    #     met_bsm_pad = np.full((Met_bsm.shape[0],3), 0, dtype=float)
-    #     paddedMet = np.concatenate((Met,met_pad), axis=1)
-    #     paddedMet_bsm = np.concatenate((Met_bsm,met_bsm_pad), axis=1)
+        # Set aside bkg samples to form test set
+        num_test_ev_sm = self.num_test_ev_sm
+        self.d_test = d[:num_test_ev_sm,:,:,:]
+        self.Met_sm = Met[:num_test_ev_sm,:] 
+        self.weight_sm = weight[:num_test_ev_sm]
 
-    #     # concatenate d and Met
-    #     paddedMet = np.reshape(paddedMet, (paddedMet.shape[0],1,1,paddedMet.shape[1]))
-    #     paddedMet_bsm = np.reshape(paddedMet_bsm, (paddedMet_bsm.shape[0],1,1,paddedMet_bsm.shape[1]))
-    #     d = np.concatenate((d,paddedMet), axis=2)
-    #     d_bsm = np.concatenate((d_bsm,paddedMet_bsm), axis=2)
-
-    #     # concatenate multiplicities back to Met
-    #     Met = np.concatenate((Met, mult), axis=1)
-    #     Met_bsm = np.concatenate((Met_bsm, mult_bsm), axis=1)
-
-    #     # Set aside bkg samples to form test set
-    #     num_test_ev_sm = self.num_test_ev_sm     
-    #     self.d_test = d[:num_test_ev_sm,:,:,:]
-    #     self.Met_sm = Met[:num_test_ev_sm,:] 
-    #     self.weight_sm = weight[:num_test_ev_sm]
-
-    #     # Build test set
-    #     self.x_test = np.append(self.d_test, d_bsm, axis=0)
-    #     self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
-    #     self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
+        # Build test set
+        self.x_test = np.append(self.d_test, d_bsm, axis=0)
+        self.met_test = np.append(self.Met_sm, Met_bsm, axis=0)
+        self.weight_test = np.append(self.weight_sm, weight_bsm, axis=0)
         
-    #     # Remaining data for train and val
-    #     self.d = d[(num_test_ev_sm+1):,:,:,:]
-    #     self.Met_d = Met[(num_test_ev_sm+1):,:] 
-    #     self.weight = weight[(num_test_ev_sm+1):]
+        # Remaining data for train and val
+        self.d = d[(num_test_ev_sm+1):,:,:,:]
+        self.Met_d = Met[(num_test_ev_sm+1):,:] 
+        self.weight = weight[(num_test_ev_sm+1):]
 
-    #     # save the scalers
-    #     # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
-    #     # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))
+        # save the scalers
+        # dump(scaler_p, open(data_save_path + 'darkflow/models/run4/%s_particleScaler.pkl' %model_name, 'wb'))
+        # dump(scaler_met, open(data_save_path + 'darkflow/models/run4/%s_metScaler.pkl' %model_name, 'wb'))
 
-    #     # build train and val sets
-    #     i_train = int(self.d.shape[0]*self.training_fraction)
-    #     # training data
-    #     self.x_train = self.d[:i_train,:,:,:]
-    #     self.met_train = self.Met_d[:i_train,:] 
-    #     self.weight_train = self.weight[:i_train]
+        # build train and val sets
+        i_train = int(self.d.shape[0]*self.training_fraction)
+        # training data
+        self.x_train = self.d[:i_train,:,:,:]
+        self.met_train = self.Met_d[:i_train,:] 
+        self.weight_train = self.weight[:i_train]
         
-    #     # Val data
-    #     self.x_val = self.d[i_train:,:,:,:]
-    #     self.met_val = self.Met_d[i_train:,:]
-    #     self.weight_val = self.weight[i_train:]
-        
-    #     print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
+        # Val data
+        self.x_val = self.d[i_train:,:,:,:]
+        self.met_val = self.Met_d[i_train:,:]
+        self.weight_val = self.weight[i_train:]
+
+        print('Done; x_train shape: ', self.x_train.shape, 'x_val shape: ', self.x_val.shape, 'x_test shape: ', self.x_test.shape) #, 'met_train shape: ', self.met_train.shape, 'met_val shape: ', self.met_val.shape)
         
 
     def trainer(self):
         # torch.autograd.set_detect_anomaly(True)
         self.train_loader = DataLoader(dataset = self.x_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
-        # self.adjTr_loader = DataLoader(dataset = self.adj_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.metTr_loader = DataLoader(dataset = self.met_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
         self.weight_train_loader = DataLoader(dataset = self.weight_train, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
         self.val_loader = DataLoader(dataset = self.x_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
-        # self.adjVa_loader = DataLoader(dataset = self.adj_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
+        self.metVa_loader = DataLoader(dataset = self.met_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
         self.weight_val_loader = DataLoader(dataset = self.weight_val, batch_size = self.test_batch_size, shuffle=False, drop_last=True)
 
         # to store training history
@@ -316,14 +275,14 @@ class GCNNetRunner:
             tr_loss_aux = 0.0
             tr_kl_aux = 0.0
             tr_rec_aux = 0.0
-            for y, (x_train, wt_train) in tqdm(enumerate(zip(self.train_loader, self.weight_train_loader))):
+            for y, (x_train, met_train, wt_train) in tqdm(enumerate(zip(self.train_loader, self.metTr_loader, self.weight_train_loader))):
                 if y == (len(self.train_loader)): break
 
                 # build the graphs
                 features_train, adj_train = build_graph(x_train)
 
                 # train
-                tr_loss, tr_kl, tr_eucl, self.model, ti, tod = train_gcnnet(self.model, features_train, adj_train, wt_train, self.optimizer, batch_size=self.test_batch_size)
+                tr_loss, tr_kl, tr_eucl, self.model, ti, tod = train_gcnnet(self.model, features_train, adj_train, met_train, wt_train, self.optimizer, batch_size=self.test_batch_size)
                 
                 tr_loss_aux += tr_loss
                 tr_kl_aux += tr_kl
@@ -338,14 +297,14 @@ class GCNNetRunner:
             val_kl_aux = 0.0
             val_rec_aux = 0.0
 
-            for y, (x_val, wt_val) in tqdm(enumerate(zip(self.val_loader, self.weight_val_loader))):
+            for y, (x_val, met_val, wt_val) in tqdm(enumerate(zip(self.val_loader, self.metVa_loader, self.weight_val_loader))):
                 if y == (len(self.val_loader)): break
                 
                 # build the graphs
                 features_val, adj_val = build_graph(x_val)
                 
                 # validate
-                val_loss, val_kl, val_eucl = test_gcnnet(self.model, features_val, adj_val, wt_val, batch_size=self.test_batch_size)
+                val_loss, val_kl, val_eucl = test_gcnnet(self.model, features_val, adj_val, met_val, wt_val, batch_size=self.test_batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -391,7 +350,7 @@ class GCNNetRunner:
 
         # load data
         self.test_loader = DataLoader(dataset=self.x_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
-        # self.adjTe_loader = DataLoader(dataset=self.adj_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
+        self.metTe_loader = DataLoader(dataset=self.met_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
         self.weight_test_loader = DataLoader(dataset=self.weight_test, batch_size=self.test_batch_size, shuffle=False, drop_last=True)
 
         print('Starting the Testing Process ...')
@@ -399,14 +358,14 @@ class GCNNetRunner:
         self.test_ev_kl = []
         self.test_ev_loss = []
         
-        for y, (x_test, wt_test) in tqdm(enumerate(zip(self.test_loader, self.weight_test_loader))):
+        for y, (x_test, met_test, wt_test) in tqdm(enumerate(zip(self.test_loader, self.metTe_loader, self.weight_test_loader))):
             if y == (len(self.test_loader)): break
 
             # build graph
             features_test, adj_test = build_graph(x_test)
             
             #Test
-            te_loss, te_kl, te_eucl = test_gcnnet(self.model, features_test, adj_test, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl = test_gcnnet(self.model, features_test, adj_test, met_test, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())

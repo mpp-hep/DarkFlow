@@ -129,6 +129,8 @@ def hf5_to_npy(file, channel):
     EMinus = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
     Gamma = np.full((d.shape[0],obj_per_evt,5), 0, dtype=float)
     mult = np.full((d.shape[0], 7), 0, dtype=float) # count the object multiplicities per event
+    HT = [] # HT
+    mEff = [] #Effective mass
         
     for i in range(d.shape[0]):
         ct_j = 0
@@ -155,6 +157,8 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[1])
                     jets[i][ct_j] = x #d[i][j+1:j+5]
                     ct_j += 1
+                    HT[i] = HT[i] + x[1]
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'b':
                 c_bj += 1
                 if ct_bj < obj_per_evt:
@@ -162,6 +166,7 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[2])
                     bjets[i][ct_bj] = x #d[i][j+1:j+5]
                     ct_bj += 1
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'm+':
                 c_mp += 1
                 if ct_mp < obj_per_evt:
@@ -169,6 +174,7 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[3])
                     MPlus[i][ct_mp] = x #d[i][j+1:j+5]
                     ct_mp += 1
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'm-':
                 c_mm += 1
                 if ct_mm < obj_per_evt:
@@ -176,6 +182,7 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[4])
                     MMinus[i][ct_mm] = x #d[i][j+1:j+5]
                     ct_mm += 1
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'e+':
                 c_ep += 1
                 if ct_ep < obj_per_evt:
@@ -183,6 +190,7 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[5])
                     EPlus[i][ct_ep] = x #d[i][j+1:j+5]
                     ct_ep += 1
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'e-':
                 c_em += 1
                 if ct_em < obj_per_evt:
@@ -190,6 +198,7 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[6])
                     EMinus[i][ct_em] = x #d[i][j+1:j+5]
                     ct_em += 1
+                    mEff[i] = mEff[i] + x[1]
             elif d[i][j] == 'g':
                 c_g += 1
                 if ct_g < obj_per_evt:
@@ -197,16 +206,21 @@ def hf5_to_npy(file, channel):
                     x = np.append(x,[7])
                     Gamma[i][ct_g] = x #d[i][j+1:j+5]
                     ct_g += 1
+                    mEff[i] = mEff[i] + x[1]
             else:
                 flag = 1
 
         mult[i] = np.array([c_j, c_bj, c_mp, c_mm, c_ep, c_em, c_g])
+        mEff[i] = mEff[i] + met[i]
 
     data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
     met = np.reshape(met, (met.shape[0], 1))
-    met_mult = np.concatenate((met, mult), axis=1) # Concatenate the multiplicitites to met
-    met = np.c_[met_mult, event_weight]
+    met = np.concatenate((met, HT), axis=1) # Concat HT
+    met = np.concatenate((met, mEff), axis=1) # Concat mEff
+    met = np.concatenate((met, event_weight), axis=1) # Concat weight
+    met_mult = np.concatenate((met, mult), axis=1) # Concat the multiplicitites
+    
     # print('Data shape: ', data_f.shape)
     save_npy(data_f, data_save_path + 'Data/DMData/npy/d_%s.npy' %channel)
     save_npy(met, data_save_path + 'Data/DMData/npy/met_%s.npy' %channel)

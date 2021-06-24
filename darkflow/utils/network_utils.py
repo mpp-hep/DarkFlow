@@ -91,7 +91,7 @@ def test_convnet(model, x_test, met_test, wt_test, batch_size):
     return te_loss, te_kl, te_eucl
 
 #Sparse loss function    
-def compute_gcn_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
+def compute_gcn_loss(x, met, weight, x_decoded, met_decoded, mean, logvar, batch_size=1, beta=1):
     
     # Euclidean distance 
     pdist = nn.PairwiseDistance(p=2) 
@@ -133,19 +133,23 @@ def compute_gcn_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     reconstruction_loss = - eucl            
     # Compares mu = mean, sigma = exp(0.5 * logvar) gaussians with standard gaussians, with weight per event incorporated
     KL_divergence = 0.5 * torch.sum(weight * (torch.pow(mean, 2) + torch.exp(logvar) - logvar - 1.0)).sum() / batch_size 
-    ELBO = reconstruction_loss - (beta * KL_divergence) 
-    loss = - ELBO
+    ELBO = reconstruction_loss - (beta * KL_divergence)
+    # compute HLF loss
+    hlf_lossF = nn.MSELoss()
+    hlf_loss = hlf_lossF(met_decoded, met)
+    loss = - ELBO + 1E2 * hlf_loss
     return loss, (beta * KL_divergence), eucl
 
-def train_gcnnet(model, x_train, adj_train, wt_train, optimizer, batch_size):
+def train_gcnnet(model, x_train, adj_train, met_train, wt_train, optimizer, batch_size):
     input_train = x_train.cuda()
     adj_train = adj_train.cuda()
+    met_train = met_train.cuda()
     wt_train = wt_train[:].cuda()
     model.train()   
 
-    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, adj_train)
+    x_decoded, met_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, adj_train, met_train)
 
-    tr_loss, tr_kl, tr_eucl = compute_gcn_loss(input_train, wt_train, x_decoded, z_mu, z_var, batch_size=batch_size)
+    tr_loss, tr_kl, tr_eucl = compute_gcn_loss(input_train, met_train, wt_train, x_decoded, met_decoded, z_mu, z_var, batch_size=batch_size)
     
     # Backprop and perform Adam optimisation
     optimizer.zero_grad()
@@ -155,16 +159,17 @@ def train_gcnnet(model, x_train, adj_train, wt_train, optimizer, batch_size):
     return tr_loss, tr_kl, tr_eucl, model, input_train, x_decoded
 
 # Test/Validate
-def test_gcnnet(model, x_test, adj_test, wt_test, batch_size):
+def test_gcnnet(model, x_test, adj_test, met_test, wt_test, batch_size):
     model.eval()
     with torch.no_grad():
         input_test = x_test.cuda()
         adj_test = adj_test.cuda()
+        met_test = met_test.cuda()
         wt_test = wt_test[:].cuda()
 
-        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, adj_test)
+        x_decoded, met_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, adj_test, met_test)
         
-        te_loss, te_kl, te_eucl = compute_gcn_loss(input_test, wt_test, x_decoded, z_mu, z_var, batch_size=batch_size)
+        te_loss, te_kl, te_eucl = compute_gcn_loss(input_test, met_test, wt_test, x_decoded, met_decoded, z_mu, z_var, batch_size=batch_size)
 
     return te_loss, te_kl, te_eucl
 

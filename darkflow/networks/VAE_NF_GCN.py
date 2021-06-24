@@ -48,12 +48,13 @@ class GCNNet(nn.Module):
 
         self.ldj = 0        
 
-    def encode(self, x, adj):
+    def encode(self, x, adj, met):
         out = F.relu(self.gc1(x, adj))
         out = F.dropout(out, self.dropout, training=self.training)
         out = F.relu(self.gc2(out, adj))
         # flatten
         out = out.flatten()
+        out = torch.cat((out,met),axis=1)
         # dense layer 1
         out = F.relu(self.dense1(out))
         # dense layer 2
@@ -66,24 +67,27 @@ class GCNNet(nn.Module):
         out = F.relu(self.dense3(z))
         # dense layer 4
         out = F.relu(self.dense4(out))
+        # separate hlf from hidden node features
+        hlf = out[:,-3:]
+        out = out[:,:-3]
         # reshape
         out = out.view(31, 2) #20-full(13+3), 5-4LJ, 26-full(13+4)
         # reconstruct
         out = F.relu(self.gc3(out, adj))
         out = F.relu(self.gc4(out, adj))
-        return out
+        return out, hlf
 
     def reparameterize(self, mean, logvar):
         z = mean + torch.randn_like(mean) * torch.exp(0.5 * logvar)
         return z
 
-    def forward(self, x, adj):
+    def forward(self, x, adj, met):
         
-        mean, logvar = self.encode(x, adj)
+        mean, logvar = self.encode(x, adj, met)
         z = self.reparameterize(mean, logvar)
-        out = self.decode(z, adj)
+        out, met_out = self.decode(z, adj)
         
-        return out, mean, logvar, self.ldj, z, z
+        return out, met_out, mean, logvar, self.ldj, z, z
 
 
 class PlanarVAE(GCNNet):
