@@ -168,8 +168,11 @@ def test_gcnnet(model, x_test, adj_test, met_test, wt_test, batch_size):
         wt_test = wt_test[:].cuda()
 
         x_decoded, met_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, adj_test, met_test)
+
+        c = torch.zeros(15)
+        radius_score = torch.cdist(z0, c, p=2) # Radius from center of Gaussian space - Anomaly Score
         
         te_loss, te_kl, te_eucl = compute_gcn_loss(input_test, met_test, wt_test, x_decoded, met_decoded, z_mu, z_var, batch_size=batch_size)
 
-    return te_loss, te_kl, te_eucl
+    return te_loss, te_kl, te_eucl, radius_score
 

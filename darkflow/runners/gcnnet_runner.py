@@ -304,7 +304,7 @@ class GCNNetRunner:
                 features_val, adj_val = build_graph(x_val)
                 
                 # validate
-                val_loss, val_kl, val_eucl = test_gcnnet(self.model, features_val, adj_val, met_val, wt_val, batch_size=self.test_batch_size)
+                val_loss, val_kl, val_eucl, val_radius = test_gcnnet(self.model, features_val, adj_val, met_val, wt_val, batch_size=self.test_batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -357,6 +357,7 @@ class GCNNetRunner:
         self.test_ev_rec = []
         self.test_ev_kl = []
         self.test_ev_loss = []
+        self.test_ev_radius = []
         
         for y, (x_test, met_test, wt_test) in tqdm(enumerate(zip(self.test_loader, self.metTe_loader, self.weight_test_loader))):
             if y == (len(self.test_loader)): break
@@ -365,16 +366,18 @@ class GCNNetRunner:
             features_test, adj_test = build_graph(x_test)
             
             #Test
-            te_loss, te_kl, te_eucl = test_gcnnet(self.model, features_test, adj_test, met_test, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl, te_radius = test_gcnnet(self.model, features_test, adj_test, met_test, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
             self.test_ev_rec.append(te_eucl.cpu().detach().numpy())
+            self.test_ev_radius.append(te_radius.cpu().detach().numpy())
             
         # print('loss: ', test_ev_loss)
         save_npy(np.array(self.test_ev_loss), self.test_data_save_path + '%s_loss.npy' %self.model_name)
         save_npy(np.array(self.test_ev_kl), self.test_data_save_path + '%s_kl.npy' %self.model_name)
         save_npy(np.array(self.test_ev_rec), self.test_data_save_path + '%s_rec.npy' %self.model_name)
+        save_npy(np.array(self.test_ev_radius), self.test_data_save_path + '%s_radius.npy' %self.model_name)
         
         # save_csv(data= np.array(self.test_ev_kl), filename= self.test_data_save_path + 'rec_%s.csv' %self.model_name)
         # save_csv(data= np.array(self.test_ev_rec), filename= self.test_data_save_path + 'rec1_%s.csv' %self.model_name)
