@@ -88,7 +88,7 @@ def test_convnet(model, x_test, met_test, wt_test, batch_size):
         
         te_loss, te_kl, te_eucl = compute_loss(input_test, wt_test, x_decoded, z_mu, z_var, batch_size=batch_size)
 
-    return te_loss, te_kl, te_eucl
+    return te_loss, te_kl, te_eucl, z_mu
 
 #Sparse loss function    
 def compute_gcn_loss(x, met, weight, x_decoded, met_decoded, mean, logvar, batch_size=1, beta=1):

@@ -319,7 +319,7 @@ class ConvNetRunner:
                 if y == (len(self.val_loader)): break
                 
                 #Test
-                val_loss, val_kl, val_eucl = test_convnet(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
+                val_loss, val_kl, val_eucl, z_mu = test_convnet(self.model, x_val, met_va, wt_val, batch_size=self.batch_size)
 
                 val_loss_aux += val_loss
                 val_kl_aux += val_kl
@@ -373,7 +373,7 @@ class ConvNetRunner:
             if y == (len(self.test_loader)): break
             
             #Test
-            te_loss, te_kl, te_eucl = test_convnet(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
+            te_loss, te_kl, te_eucl, z_mu = test_convnet(self.model, x_test, met_te, wt_test, batch_size=self.test_batch_size)
             
             self.test_ev_loss.append(te_loss.cpu().detach().numpy())
             self.test_ev_kl.append(te_kl.cpu().detach().numpy())
