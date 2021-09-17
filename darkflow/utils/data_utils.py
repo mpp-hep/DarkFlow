@@ -200,13 +200,13 @@ def hf5_to_npy(file, channel):
             else:
                 flag = 1
 
-        mult[i] = np.array([c_j, c_bj, c_mp, c_mm, c_ep, c_em, c_g])
+        #mult[i] = np.array([c_j, c_bj, c_mp, c_mm, c_ep, c_em, c_g])
 
     data_f = np.concatenate((jets,bjets,MPlus,MMinus,EPlus,EMinus,Gamma), axis=1)
     data_f = np.reshape(data_f, (data_f.shape[0], 1, data_f.shape[1], data_f.shape[2]))
     met = np.reshape(met, (met.shape[0], 1))
-    met_mult = np.concatenate((met, mult), axis=1) # Concatenate the multiplicitites to met
-    met = np.c_[met_mult, event_weight]
+#     met_mult = np.concatenate((met, mult), axis=1) # Concatenate the multiplicitites to met
+    met = np.c_[met, event_weight]
     # print('Data shape: ', data_f.shape)
     save_npy(data_f, data_save_path + 'Data/DMData/npy/d_%s.npy' %channel)
     save_npy(met, data_save_path + 'Data/DMData/npy/met_%s.npy' %channel)
