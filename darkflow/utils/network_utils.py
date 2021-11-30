@@ -54,7 +54,7 @@ def compute_loss(x, weight, x_decoded, mean, logvar, batch_size=1, beta=1):
     reconstruction_loss = - eucl            
     # Compares mu = mean, sigma = exp(0.5 * logvar) gaussians with standard gaussians, with weight per event incorporated
     KL_divergence = 0.5 * torch.sum(weight * (torch.pow(mean, 2) + torch.exp(logvar) - logvar - 1.0)).sum() / batch_size 
-    ELBO = 0.01 * reconstruction_loss - (1e6 * KL_divergence) 
+    ELBO = reconstruction_loss - (beta * KL_divergence) 
     loss = - ELBO
     return loss, (beta * KL_divergence), eucl
 
