@@ -1,3 +1,5 @@
 # DarkFlow
 
-To access the latest stable version of the code with the added Neural Spline Flow implementation, navigate to the <darkflow_stable> branch
+Wubba Lubba Dub Dub!! 
+
+You are currently in the right branch to access the latest stable build of this repo!
