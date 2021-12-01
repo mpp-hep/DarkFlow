@@ -1,0 +1,210 @@
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import torchvision.transforms as transforms
+import torchvision.datasets
+import numpy as np
+
+from darkflow.utils.data_utils import log_normal_diag, log_normal_standard
+
+#Sparse loss function    
+def compute_loss(x, weight, x_decoded, mean, logvar, ldj, z_0, z_k, batch_size=1, beta=1):
+    # print('computing loss ...')
+    # mean, logvar = model.encode(x)
+    # z = model.reparameterize(mean, logvar)
+    # x_decoded = model.decode(z)
+
+    
+    # Euclidean distance 
+    pdist = nn.PairwiseDistance(p=2) 
+    x_pos = torch.zeros(batch_size,3,25)#.cuda()
+    # Removes the channel dimension to make the following calculations easier
+    x_pos = x[:,0,:,:] 
+    # Changes the dimension of the tensor so that dist is the distance between every 
+    # pair of input and output pixels
+    x_pos = x_pos.view(batch_size, 4, 1, 32) #32 full(13+3), 17-4LJ
+    
+    x_decoded_pos = torch.zeros(batch_size,4,32)#.cuda()
+    # Removes the channel dimension to make the following calculations easier
+    x_decoded_pos = x_decoded[:,0,:,:] 
+    
+    # Changes the dimension of the tensor so that dist is the distance between 
+    # every pair of input and output pixels
+    x_decoded_pos = x_decoded_pos.view(batch_size, 4, 32, 1) 
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 32, -1) 
+    
+    dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
+    
+    # Gets the value of the distance between the closest output pixels to all the 
+    # input pixels of the images in a batch (all features of the pixels)
+    ieo = torch.min(dist, dim = 1) 
+    
+    # Gets the value of the distance between the closest input pixels to all the 
+    # output pixels of the images in a batch (all features of the pixels)
+    oei = torch.min(dist, dim = 2) 
+    
+    # Symmetrical euclidean distances
+    eucl = ieo.values + oei.values 
+
+    # Managing weight tensor shape to prepare for incorporation into loss terms
+    weight = weight.unsqueeze(1)
+
+    # Average symmetrical euclidean distance per image with weight per event incorporated
+    eucl = torch.sum(weight * eucl) / batch_size 
+    
+    reconstruction_loss = eucl            
+    # Compares mu = mean, sigma = exp(0.5 * logvar) gaussians with standard gaussians, with weight per event incorporated
+    KL_divergence = 0.5 * torch.sum(weight * (torch.pow(mean, 2) + torch.exp(logvar) - logvar - 1.0)).sum() / batch_size 
+    
+    # ln p(z_k)  (not averaged)
+    log_p_zk = log_normal_standard(z_k, dim=1)
+    # ln q(z_0)  (not averaged)
+    log_q_z0 = log_normal_diag(z_0, mean=mean, log_var=logvar, dim=1)
+    # N E_q0[ ln q(z_0) - ln p(z_k) ]
+    summed_logs = torch.sum(log_q_z0 - log_p_zk)
+
+    # sum over batches
+    summed_ldj = torch.sum(ldj)
+
+    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+    kl = (summed_logs - summed_ldj)
+    # KL_divergence = kl
+    
+    ELBO = - reconstruction_loss - KL_divergence 
+    loss = - ELBO
+    return loss, (beta * KL_divergence), eucl
+
+# Train
+def train_convnet(model, x_train, met_train, wt_train, optimizer, batch_size):
+    input_train = x_train.cuda().float()
+    met_train = met_train.cuda().float()
+    wt_train = wt_train[:].cuda()
+    model.train()   
+
+    x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, met_train)
+
+    tr_loss, tr_kl, tr_eucl = compute_loss(input_train, wt_train, x_decoded, z_mu, z_var, log_det_j, z0, zk, batch_size=batch_size)
+    
+    # Backprop and perform Adam optimisation
+    optimizer.zero_grad()
+    tr_loss.backward()
+    optimizer.step()
+
+    return tr_loss, tr_kl, tr_eucl, model
+
+# Test/Validate
+def test_convnet(model, x_test, met_test, wt_test, batch_size):
+    model.eval()
+    with torch.no_grad():
+        input_test = x_test.cuda().float()
+        met_test = met_test.cuda().float()
+        wt_test = wt_test[:].cuda()
+
+        x_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, met_test)
+        
+        te_loss, te_kl, te_eucl = compute_loss(input_test, wt_test, x_decoded, z_mu, z_var, log_det_j, z0, zk, batch_size=batch_size)
+
+    return te_loss, te_kl, te_eucl, z_mu, z0, zk
+
+#Sparse loss function    
+def compute_gcn_loss(x, met, weight, x_decoded, met_decoded, mean, logvar, batch_size=1, beta=1):
+    
+    # Euclidean distance 
+    pdist = nn.PairwiseDistance(p=2) 
+    x_pos = torch.zeros(batch_size,5,31)#.cuda()
+    # Removes the channel dimension to make the following calculations easier
+    x_pos = x
+    # Changes the dimension of the tensor so that dist is the distance between every 
+    # pair of input and output pixels
+    x_pos = x_pos.view(batch_size, 5, 1, 31) #32 full(13+3), 17-4LJ
+    
+    x_decoded_pos = torch.zeros(batch_size,5,31)#.cuda()
+    # Removes the channel dimension to make the following calculations easier
+    x_decoded_pos = x_decoded
+    
+    # Changes the dimension of the tensor so that dist is the distance between 
+    # every pair of input and output pixels
+    x_decoded_pos = x_decoded_pos.view(batch_size, 5, 31, 1) 
+    x_decoded_pos = torch.repeat_interleave(x_decoded_pos, 31, -1) 
+    
+    dist = torch.pow(pdist(x_pos, x_decoded_pos),2)
+    
+    # Gets the value of the distance between the closest output pixels to all the 
+    # input pixels of the images in a batch (all features of the pixels)
+    ieo = torch.min(dist, dim = 1) 
+    
+    # Gets the value of the distance between the closest input pixels to all the 
+    # output pixels of the images in a batch (all features of the pixels)
+    oei = torch.min(dist, dim = 2) 
+    
+    # Symmetrical euclidean distances
+    eucl = ieo.values + oei.values 
+
+    # Managing weight tensor shape to prepare for incorporation into loss terms
+    weight = weight.unsqueeze(1)
+
+    # Average symmetrical euclidean distance per image with weight per event incorporated
+    eucl = torch.sum(weight * eucl) / batch_size 
+    
+    reconstruction_loss = eucl            
+    # Compares mu = mean, sigma = exp(0.5 * logvar) gaussians with standard gaussians, with weight per event incorporated
+    KL_divergence = 0.5 * torch.sum(weight * (torch.pow(mean, 2) + torch.exp(logvar) - logvar - 1.0)).sum() / batch_size 
+    
+    # ln p(z_k)  (not averaged)
+    log_p_zk = log_normal_standard(z_k, dim=1)
+    # ln q(z_0)  (not averaged)
+    log_q_z0 = log_normal_diag(z_0, mean=mean, log_var=logvar, dim=1)
+    # N E_q0[ ln q(z_0) - ln p(z_k) ]
+    summed_logs = torch.sum(log_q_z0 - log_p_zk)
+
+    # sum over batches
+    summed_ldj = torch.sum(ldj)
+
+    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+    kl = (summed_logs - summed_ldj)
+    # KL_divergence = kl
+    
+    ELBO = - reconstruction_loss - KL_divergence 
+    loss = - ELBO
+    # # compute HLF loss
+    # hlf_lossF = nn.MSELoss()
+    # hlf_loss = hlf_lossF(met_decoded, met)
+    # loss = - ELBO + 1E2 * hlf_loss
+    return loss, (beta * KL_divergence), eucl
+
+def train_gcnnet(model, x_train, adj_train, met_train, wt_train, optimizer, batch_size):
+    input_train = x_train.cuda()
+    adj_train = adj_train.cuda()
+    met_train = met_train.cuda()
+    wt_train = wt_train[:].cuda()
+    model.train()   
+
+    x_decoded, met_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_train, adj_train, met_train)
+
+    tr_loss, tr_kl, tr_eucl = compute_gcn_loss(input_train, met_train, wt_train, x_decoded, met_decoded, z_mu, z_var, batch_size=batch_size)
+    
+    # Backprop and perform Adam optimisation
+    optimizer.zero_grad()
+    tr_loss.backward()
+    optimizer.step()
+
+    return tr_loss, tr_kl, tr_eucl, model, input_train, x_decoded
+
+# Test/Validate
+def test_gcnnet(model, x_test, adj_test, met_test, wt_test, batch_size):
+    model.eval()
+    with torch.no_grad():
+        input_test = x_test.cuda()
+        adj_test = adj_test.cuda()
+        met_test = met_test.cuda()
+        wt_test = wt_test[:].cuda()
+
+        x_decoded, met_decoded, z_mu, z_var, log_det_j, z0, zk = model(input_test, adj_test, met_test)
+
+        c = torch.zeros(15)
+        radius_score = torch.cdist(z0, c, p=2) # Radius from center of Gaussian space - Anomaly Score
+        
+        te_loss, te_kl, te_eucl = compute_gcn_loss(input_test, met_test, wt_test, x_decoded, met_decoded, z_mu, z_var, batch_size=batch_size)
+
+    return te_loss, te_kl, te_eucl, radius_score
+
