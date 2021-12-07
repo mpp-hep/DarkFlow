@@ -328,8 +328,8 @@ def RQS(inputs, unnormalized_widths, unnormalized_heights,
         bottom=0., top=1., min_bin_width=DEFAULT_MIN_BIN_WIDTH,
         min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
         min_derivative=DEFAULT_MIN_DERIVATIVE):
-    if torch.min(inputs) < left or torch.max(inputs) > right:
-        raise ValueError("Input outside domain")
+    # if torch.min(inputs) < left or torch.max(inputs) > right:
+        # raise ValueError("Input outside domain")
 
     num_bins = unnormalized_widths.shape[-1]
 

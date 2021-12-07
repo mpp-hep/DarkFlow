@@ -283,7 +283,7 @@ class NSF_AR(nn.Module):
     Neural spline flow, auto-regressive.
     [Durkan et al. 2019]
     """
-    def __init__(self, dim=15, K = 5, B = 3, hidden_dim = 8, base_network = FCNN):
+    def __init__(self, dim=15, K = 64, B = 3, hidden_dim = 8, base_network = FCNN):
         super().__init__()
         self.dim = dim
         self.K = K
